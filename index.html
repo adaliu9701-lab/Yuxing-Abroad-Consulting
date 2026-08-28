@@ -500,7 +500,7 @@
         loginBtn.disabled = false;
 
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
-        if(s && s.user && (Date.now() - s.lastActive < 14400000)) { // 4小时 = 14400000ms
+        if(s && s.user && (Date.now() - s.lastActive < 14400000)) {
             currentUser = s.user; s.lastActive = Date.now();
             localStorage.setItem('yuxing_session_v11', JSON.stringify(s));
             loginSuccess(true);
@@ -536,7 +536,7 @@
         });
     }
 
-    // ================= 会话与安全 (4小时免打断) =================
+    // ================= 会话与安全 (延长至4小时) =================
     let activityTimeout = null;
     function updateActivity() {
         if(!currentUser || activityTimeout) return;
@@ -763,17 +763,14 @@
         saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 (完全修复学生/班级下拉加载与隐私隔离) =================
+    // ================= 实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null;
     let activeLiveClass = ''; let activeLiveStudentIds = [];
 
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
 
     function openLiveClassSetup() {
-        // 1. 获取当前用户可管理的班级
         let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
-        
-        // 2. 获取当前用户可管理的独立学生课程档案 (去重获取所有学生记录)
         let myStudents = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
 
         let selectHtml = `<option value="" hidden>请选择要上课的班级或学生课程</option>`;
@@ -803,7 +800,7 @@
             let targetS = students.find(s => s.id == recordId);
             if(targetS) {
                 activeLiveClass = `${targetS.name} (${targetS.className})`;
-                stList = [targetS]; // 仅包含该特定学生和特定课程
+                stList = [targetS]; 
             }
         }
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name} [${s.className}]</label>`).join('');
@@ -811,7 +808,11 @@
     }
 
     function startLiveClass() {
+        let selectEl = document.getElementById('live-class-select');
         let cbs = document.querySelectorAll('.live-student-cb:checked');
+        
+        // 修复：如果老师刚打开弹窗没在下拉框选任何东西直接点，给出友好提示
+        if(!selectEl.value) return alert("请先在下拉菜单中选择一个班级或特定的学生课程！");
         if(cbs.length === 0) return alert("请至少勾选一名上课学生");
         
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value);
@@ -874,7 +875,7 @@
         saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}，已自动为出勤学生录入时长与费用。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 学生档案与互动加分 (保护隐私) =================
+    // ================= 学生档案与互动加分 =================
     function openStudentDetailById(id) {
         currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex';
     }
@@ -927,10 +928,23 @@
             }
 
             if (s.bills && s.bills.length > 0) {
-                s.bills.forEach(b => {
+                s.bills.forEach((b, billIdx) => {
                     let statusUI = b.status === 'paid' ? `<span class="badge" style="background:#e3fcef; color:#118d57;">已结清</span>` : `<span class="badge" style="background:#ffebe6; color:#bf2600;">待支付 (催费中)</span>`;
-                    let actionBtn = b.status === 'unpaid' ? `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:12px; padding:6px 12px; font-size:13px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button>` : '';
-                    html += `<div class="item-card"><div style="font-weight:600;">账单批次: ${b.month}</div><div style="font-size:18px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtn}</div>`;
+                    
+                    // 新增：确认收款按钮旁边的“撤回并恢复未结清”按钮
+                    let actionBtnsHtml = '';
+                    if (b.status === 'unpaid') {
+                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;">` +
+                                         `<button class="btn-apple btn-green" style="padding:6px 10px; font-size:12px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button>` +
+                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回并恢复</button>` +
+                                         `</div>`;
+                    } else {
+                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;">` +
+                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回已结清账单</button>` +
+                                         `</div>`;
+                    }
+
+                    html += `<div class="item-card"><div style="font-weight:600;">账单批次: ${b.month}</div><div style="font-size:18px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtnsHtml}</div>`;
                 });
             } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">本课程暂无历史账单</div>`; }
         } else {
@@ -974,6 +988,18 @@
         b.status = 'paid'; 
         saveData(); renderStudentDetails(); 
         if(currentUser.role === 'admin') renderAdminDashboard(); 
+    }
+
+    // 新增：撤销催费单并恢复未结清状态
+    function revokeBill(studentId, billId) {
+        if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return;
+        let s = students.find(x => x.id === studentId);
+        s.bills = s.bills.filter(b => b.id !== billId);
+        // 将该学生所有已出账标记重置回未出账，以便重新合并计算
+        (s.attendance || []).forEach(a => { a.billed = false; });
+        saveData(); renderStudentDetails(); 
+        if(currentUser.role === 'admin') renderAdminDashboard();
+        alert("已成功撤销该催费单并恢复未结清状态！");
     }
 
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id === currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
