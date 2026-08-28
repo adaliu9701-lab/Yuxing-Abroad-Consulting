@@ -67,7 +67,6 @@
         button.btn-orange:hover { box-shadow: 0 4px 12px rgba(245,99,0,0.3); }
         button.btn-purple { background: #5e5ce6; }
 
-        /* 长按按钮防误触动画 */
         .btn-long-press { overflow: hidden; user-select: none; -webkit-user-select: none; }
         .btn-long-press::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.25); width: 0%; transition: width 1.5s linear; pointer-events: none; }
         .btn-long-press.pressing::after { width: 100%; }
@@ -83,6 +82,12 @@
         .kpi-card h3 { margin: 0 0 8px 0; font-size: 13px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
         .kpi-card .amount { font-size: 28px; font-weight: 700; color: var(--text-main); }
         
+        /* 左右分栏布局 */
+        .main-grid { display: flex; gap: 20px; align-items: flex-start; }
+        .main-grid .left-col { flex: 3; min-width: 0; } /* 占比约75% */
+        .main-grid .right-col { flex: 1; min-width: 0; } /* 占比约25% */
+        @media(max-width: 900px) { .main-grid { flex-direction: column; } }
+
         .table-wrap { overflow: hidden; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { padding: 16px; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; border-bottom: 1px solid rgba(0,0,0,0.05); }
@@ -119,9 +124,8 @@
 
         .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 24px; background: #fff; border-radius: 16px; padding: 16px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); }
         .flex-row { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
-        .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 24px 0 12px; letter-spacing: 0.5px; }
+        .section-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 24px 0 12px; letter-spacing: 0.5px; }
         
-        /* 实时课堂秒表 */
         .live-timer { font-size: 54px; font-weight: 700; text-align: center; color: var(--text-main); font-variant-numeric: tabular-nums; letter-spacing: 2px; margin: 20px 0; }
         .student-checkbox-list { background: rgba(0,0,0,0.02); border-radius: 12px; padding: 12px; max-height: 150px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.05); margin-bottom:16px; }
         .student-cb-item { display: inline-flex; align-items: center; background: #fff; padding: 6px 12px; border-radius: 20px; margin: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); font-size: 13px; cursor: pointer; }
@@ -158,7 +162,6 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
-            <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openAddTeacherModal()">+ 新增教师</button>
             
             <button class="btn-apple btn-orange manage-only" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
             <button class="btn-apple btn-purple manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 批量打卡与作业</button>
@@ -183,19 +186,44 @@
         </div>
     </div>
 
-    <div class="table-wrap glass-panel">
-        <table>
-            <thead>
-                <tr>
-                    <th>姓名 / Name</th>
-                    <th>所属班级 / Class</th>
-                    <th>任课老师 / Teacher</th>
-                    <th>本课积分</th>
-                    <th>操作 / Status</th>
-                </tr>
-            </thead>
-            <tbody id="student-list-body"></tbody>
-        </table>
+    <!-- 左右分栏设计：左学生，右教师 -->
+    <div class="main-grid">
+        <div class="left-col">
+            <div class="section-title" style="margin-top:0;">👨‍🎓 学生档案与记录</div>
+            <div class="table-wrap glass-panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>姓名 / Name</th>
+                            <th>所属班级 / Class</th>
+                            <th>任课老师 / Teacher</th>
+                            <th>本课积分</th>
+                            <th>操作 / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="right-col admin-only" id="teacher-manage-section">
+            <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                👩‍🏫 教职工管理
+                <button class="btn-apple btn-green" style="width:auto; padding:4px 10px; font-size:12px;" onclick="openAddTeacherModal()">+ 新增</button>
+            </div>
+            <div class="table-wrap glass-panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>教师姓名</th>
+                            <th>账号</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacher-list-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -262,7 +290,21 @@
             <input type="text" id="new-teacher-name" class="input-elegant" placeholder="教师真实姓名 (如: 王老师)">
             <input type="text" id="new-teacher-username" class="input-elegant" placeholder="登录账号 (Username)">
             <input type="text" id="new-teacher-password" class="input-elegant" value="123456" placeholder="初始密码">
-            <button class="btn-apple btn-green" onclick="addTeacher()">创建教师</button>
+            <button class="btn-apple btn-green" onclick="addTeacher()">确认创建</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="edit-teacher-pw-modal">
+    <div class="modal-container" style="max-width: 360px;">
+        <div class="modal-header">
+            <h2>修改教师密码</h2>
+            <button class="close-btn" onclick="closeModal('edit-teacher-pw-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-t-un">
+            <input type="text" id="edit-t-pw" class="input-elegant" placeholder="输入该教师的新密码">
+            <button class="btn-apple" onclick="saveTeacherPw()">保存修改</button>
         </div>
     </div>
 </div>
@@ -296,7 +338,7 @@
                 <input type="number" id="new-hourly-rate" class="input-elegant" placeholder="课时费 ￥/hr (仅管理员可见)">
                 <input type="number" id="new-initial-points" class="input-elegant" placeholder="本课初始积分 (选填)">
             </div>
-            <div class="section-title">分配/验证登录账号</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">分配/验证登录账号</div>
             <div class="flex-row">
                 <input type="text" id="new-username" class="input-elegant" placeholder="账号名">
                 <input type="text" id="new-password" class="input-elegant" value="111111">
@@ -306,7 +348,7 @@
     </div>
 </div>
 
-<!-- ================= 新增/升级：批量打卡与作业 ================= -->
+<!-- 批量打卡与作业 -->
 <div class="modal-overlay" id="publish-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
         <div class="modal-header">
@@ -314,11 +356,11 @@
             <button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title" style="margin-top:0;">1. 选择班级并勾选出勤学生 (排查请假)</div>
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选出勤学生 (排查请假)</div>
             <select id="pub-class-select" class="input-elegant" onchange="renderPubStudentCheckboxes(this.value)"></select>
             <div id="pub-student-list" class="student-checkbox-list"></div>
 
-            <div class="section-title">2. 补录上课时间与纪实 (选填)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 补录上课时间与纪实 (选填)</div>
             <div class="flex-row">
                 <input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间">
                 <span style="color:var(--text-muted)">至</span>
@@ -326,7 +368,7 @@
             </div>
             <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
             
-            <div class="section-title">3. 课后作业布置 (选填)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">3. 课后作业布置 (选填)</div>
             <input type="text" id="pub-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称">
             <textarea id="pub-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
             
@@ -335,7 +377,7 @@
     </div>
 </div>
 
-<!-- ================= 新增：实时课堂秒表 ================= -->
+<!-- 实时课堂秒表 -->
 <div class="modal-overlay" id="live-setup-modal">
     <div class="modal-container" style="max-width: 450px;">
         <div class="modal-header">
@@ -343,9 +385,9 @@
             <button class="close-btn" onclick="closeModal('live-setup-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title" style="margin-top:0;">选择马上要上课的班级</div>
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">选择马上要上课的班级</div>
             <select id="live-class-select" class="input-elegant" onchange="renderLiveStudentCheckboxes(this.value)"></select>
-            <div class="section-title">确认考勤名单 (取消勾选请假学生)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">确认考勤名单 (取消勾选请假学生)</div>
             <div id="live-student-list" class="student-checkbox-list"></div>
             <button class="btn-apple btn-orange" onclick="startLiveClass()">进入课堂面板</button>
         </div>
@@ -373,7 +415,7 @@
     </div>
 </div>
 
-<!-- 其他模态框 (档案、加分等) -->
+<!-- 其他模态框 -->
 <div class="modal-overlay" id="detail-modal">
     <div class="modal-container" style="max-width: 780px;">
         <div class="modal-header">
@@ -407,26 +449,27 @@
 </div>
 
 <script>
-    let staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v10')) || JSON.parse(localStorage.getItem('yuxing_staff_v9')) || { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员' } };
-    let students = JSON.parse(localStorage.getItem('yuxing_students_v10')) || JSON.parse(localStorage.getItem('yuxing_students_v9')) || [];
-    let classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v10')) || JSON.parse(localStorage.getItem('yuxing_classes_v9')) || [];
+    // ================= 数据初始化 =================
+    let staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v11')) || JSON.parse(localStorage.getItem('yuxing_staff_v10')) || JSON.parse(localStorage.getItem('yuxing_staff_v9')) || { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员' } };
+    let students = JSON.parse(localStorage.getItem('yuxing_students_v11')) || JSON.parse(localStorage.getItem('yuxing_students_v10')) || JSON.parse(localStorage.getItem('yuxing_students_v9')) || [];
+    let classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v11')) || JSON.parse(localStorage.getItem('yuxing_classes_v10')) || JSON.parse(localStorage.getItem('yuxing_classes_v9')) || [];
     
     let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
     function saveData() {
-        localStorage.setItem('yuxing_staff_v10', JSON.stringify(staffAccounts));
-        localStorage.setItem('yuxing_students_v10', JSON.stringify(students));
-        localStorage.setItem('yuxing_classes_v10', JSON.stringify(classGroups));
+        localStorage.setItem('yuxing_staff_v11', JSON.stringify(staffAccounts));
+        localStorage.setItem('yuxing_students_v11', JSON.stringify(students));
+        localStorage.setItem('yuxing_classes_v11', JSON.stringify(classGroups));
     }
 
-    // ================= 会话保持 =================
+    // ================= 会话与安全 =================
     let activityTimeout = null;
     function updateActivity() {
         if(!currentUser || activityTimeout) return;
         activityTimeout = setTimeout(() => {
-            let s = JSON.parse(localStorage.getItem('yuxing_session_v10'));
-            if(s) { s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v10', JSON.stringify(s)); }
+            let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
+            if(s) { s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v11', JSON.stringify(s)); }
             activityTimeout = null;
         }, 3000); 
     }
@@ -434,17 +477,17 @@
 
     setInterval(() => {
         if(currentUser) {
-            let s = JSON.parse(localStorage.getItem('yuxing_session_v10'));
+            let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
             if(s && (Date.now() - s.lastActive >= 3600000)) { alert("安全保护：长时间未操作已自动登出。"); forceLogout(); } 
             else { processAutomatedBilling(); }
         }
     }, 60000);
 
     window.onload = function() {
-        let s = JSON.parse(localStorage.getItem('yuxing_session_v10')) || JSON.parse(localStorage.getItem('yuxing_session_v9'));
+        let s = JSON.parse(localStorage.getItem('yuxing_session_v11')) || JSON.parse(localStorage.getItem('yuxing_session_v10'));
         if(s && s.user && (Date.now() - s.lastActive < 3600000)) {
             currentUser = s.user; s.lastActive = Date.now();
-            localStorage.setItem('yuxing_session_v10', JSON.stringify(s));
+            localStorage.setItem('yuxing_session_v11', JSON.stringify(s));
             loginSuccess(true);
         }
     };
@@ -473,7 +516,7 @@
                 }
             }
         });
-        if(changed) { saveData(); if(currentUser && currentUser.role === 'admin') renderAdminDashboard(); }
+        if(changed) { saveData(); if(currentUser && currentUser.role === 'admin') renderAdminDashboard(); if(document.getElementById('detail-modal').style.display === 'flex') renderStudentDetails(); }
     }
 
     function handleLogin() {
@@ -486,14 +529,14 @@
 
     function loginSuccess(isRestore = false) {
         if(!isRestore) processAutomatedBilling();
-        localStorage.setItem('yuxing_session_v10', JSON.stringify({ user: currentUser, lastActive: Date.now() }));
+        localStorage.setItem('yuxing_session_v11', JSON.stringify({ user: currentUser, lastActive: Date.now() }));
         document.getElementById('login-view').style.display = 'none'; document.getElementById('app-view').style.display = 'block';
         document.getElementById('current-user-display').innerText = `${currentUser.name} (${currentUser.role === 'admin'?'校长/Admin':(currentUser.role === 'teacher'?'教师':'学生')})`;
         applyRolePermissions(); renderTable(); if (currentUser.role === 'admin') renderAdminDashboard();
     }
 
     function forceLogout() {
-        currentUser = null; localStorage.removeItem('yuxing_session_v10');
+        currentUser = null; localStorage.removeItem('yuxing_session_v11');
         document.getElementById('app-view').style.display = 'none'; document.getElementById('login-view').style.display = 'flex';
         document.getElementById('login-password').value = '';
     }
@@ -510,7 +553,11 @@
     function applyRolePermissions() {
         document.querySelectorAll('.manage-only, .admin-only').forEach(el => el.style.display = 'none');
         if (currentUser.role !== 'student') document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
-        if (currentUser.role === 'admin') { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block'); document.getElementById('admin-dashboard').style.display = 'grid'; }
+        if (currentUser.role === 'admin') { 
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block'); 
+            document.getElementById('admin-dashboard').style.display = 'grid'; 
+            document.getElementById('teacher-manage-section').style.display = 'block';
+        }
     }
 
     function renderAdminDashboard() {
@@ -524,6 +571,11 @@
     }
 
     function renderTable() {
+        renderStudentTable();
+        if (currentUser && currentUser.role === 'admin') renderTeacherTable();
+    }
+
+    function renderStudentTable() {
         const tbody = document.getElementById('student-list-body'); tbody.innerHTML = '';
         let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.username === currentUser.username));
         list.forEach(s => {
@@ -532,6 +584,47 @@
             tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetail(${s.id})">${s.name}</span></td><td><span class="badge class">${s.className || '未分配'}</span></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${getTeacherName(s.teacherUsername)}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${s.totalPoints || 0}</td><td>${actionHtml}</td>`;
             tbody.appendChild(tr);
         });
+    }
+
+    // ================= 新增：右侧教师管理 =================
+    function renderTeacherTable() {
+        const tbody = document.getElementById('teacher-list-body');
+        tbody.innerHTML = '';
+        for (let un in staffAccounts) {
+            let t = staffAccounts[un];
+            let actionHtml = un === 'admin' 
+                ? `<span style="color:var(--text-muted); font-size:12px;">系统保留</span>` 
+                : `<span class="del-mini" style="position:static; padding:4px 8px; margin-right:4px; color:var(--accent-blue); background:rgba(0,113,227,0.1);" onclick="openEditTeacherPw('${un}')">改密</span>` +
+                  `<span class="del-mini" style="position:static; padding:4px 8px;" onclick="deleteTeacher('${un}')">移除</span>`;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="font-weight:600;">${t.name}</td><td style="font-size:13px; color:var(--text-muted);">${un}</td><td>${actionHtml}</td>`;
+            tbody.appendChild(tr);
+        }
+    }
+
+    function openEditTeacherPw(un) {
+        document.getElementById('edit-t-un').value = un;
+        document.getElementById('edit-t-pw').value = '';
+        document.getElementById('edit-teacher-pw-modal').style.display = 'flex';
+    }
+
+    function saveTeacherPw() {
+        let un = document.getElementById('edit-t-un').value;
+        let newPw = document.getElementById('edit-t-pw').value.trim();
+        if(!newPw) return alert("密码不能为空");
+        if(staffAccounts[un]) {
+            staffAccounts[un].password = newPw;
+            saveData(); closeModal('edit-teacher-pw-modal'); alert(`教师 ${staffAccounts[un].name} 的密码已修改。`);
+        }
+    }
+
+    function deleteTeacher(un) {
+        if(!confirm(`确定移除教师 ${staffAccounts[un].name} 吗？\n注意：该教师名下的班级和学生将自动转交超级管理员接管。`)) return;
+        classGroups.forEach(c => { if(c.teacherUsername === un) c.teacherUsername = 'admin'; });
+        students.forEach(s => { if(s.teacherUsername === un) s.teacherUsername = 'admin'; });
+        delete staffAccounts[un];
+        saveData(); renderTable(); // re-renders both students and teachers
     }
 
     // ================= 班级与排课 =================
@@ -578,13 +671,9 @@
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select');
         sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('pub-student-list').innerHTML = ''; // reset
-        
-        // 自动填入当前时间为推荐上下课时间(默认一小时)
+        document.getElementById('pub-student-list').innerHTML = ''; 
         let now = new Date(); let hrAgo = new Date(now.getTime() - 3600000);
-        document.getElementById('pub-start').value = toLocalISOString(hrAgo);
-        document.getElementById('pub-end').value = toLocalISOString(now);
-
+        document.getElementById('pub-start').value = toLocalISOString(hrAgo); document.getElementById('pub-end').value = toLocalISOString(now);
         document.getElementById('pub-feedback').value = ''; document.getElementById('pub-hw-title').value = ''; document.getElementById('pub-hw-content').value = '';
         document.getElementById('publish-hw-modal').style.display = 'flex';
     }
@@ -596,47 +685,31 @@
     }
 
     function publishClassHomework() {
-        const cls = document.getElementById('pub-class-select').value;
-        if(!cls) return alert("请先选择班级");
-        
-        const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value;
-        const fb = document.getElementById('pub-feedback').value.trim();
-        const hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim();
-        
-        let cbs = document.querySelectorAll('.pub-student-cb:checked');
-        if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
-        
+        const cls = document.getElementById('pub-class-select').value; if(!cls) return alert("请先选择班级");
+        const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim(), hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim();
+        let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
         let actionCount = 0;
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
             if(s) {
                 if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
                 else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
-                
                 if(hwTitle) s.assignments.unshift({ title: hwTitle, content: hwContent, accuracy: "待批改", points: 0, comment: "未评价" });
                 actionCount++;
             }
         });
         if(actionCount === 0) return;
-        saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`);
-        renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
+        saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂排课秒表 =================
-    let liveStatus = 'idle'; // idle, running, paused
-    let liveSeconds = 0;
-    let liveInterval = null;
-
-    function formatTime(sec) {
-        let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-        return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
-    }
+    // ================= 实时课堂秒表 =================
+    let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null;
+    function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
 
     function openLiveClassSetup() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         document.getElementById('live-class-select').innerHTML = `<option value="" hidden>选择要上课的班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('live-student-list').innerHTML = '';
-        document.getElementById('live-setup-modal').style.display = 'flex';
+        document.getElementById('live-student-list').innerHTML = ''; document.getElementById('live-setup-modal').style.display = 'flex';
     }
 
     function renderLiveStudentCheckboxes(className) {
@@ -646,25 +719,17 @@
     }
 
     function startLiveClass() {
-        let cls = document.getElementById('live-class-select').value;
-        let cbs = document.querySelectorAll('.live-student-cb:checked');
-        if(!cls) return alert("未选择班级");
-        if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
-
-        closeModal('live-setup-modal');
-        liveStatus = 'idle'; liveSeconds = 0; clearInterval(liveInterval);
-        document.getElementById('live-timer-display').innerText = "00:00:00";
-        document.getElementById('live-btn-toggle').innerText = '▶️ 开始上课';
-        document.getElementById('live-btn-toggle').className = 'btn-apple btn-green';
-        document.getElementById('live-run-title').innerText = `🔴 正在上课: ${cls}`;
-        document.getElementById('live-run-modal').style.display = 'flex';
+        let cls = document.getElementById('live-class-select').value; let cbs = document.querySelectorAll('.live-student-cb:checked');
+        if(!cls) return alert("未选择班级"); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
+        closeModal('live-setup-modal'); liveStatus = 'idle'; liveSeconds = 0; clearInterval(liveInterval);
+        document.getElementById('live-timer-display').innerText = "00:00:00"; document.getElementById('live-btn-toggle').innerText = '▶️ 开始上课'; document.getElementById('live-btn-toggle').className = 'btn-apple btn-green';
+        document.getElementById('live-run-title').innerText = `🔴 正在上课: ${cls}`; document.getElementById('live-run-modal').style.display = 'flex';
     }
 
     function toggleLiveTimer() {
         let btn = document.getElementById('live-btn-toggle');
         if(liveStatus === 'idle' || liveStatus === 'paused') {
-            liveStatus = 'running';
-            liveInterval = setInterval(() => { liveSeconds++; document.getElementById('live-timer-display').innerText = formatTime(liveSeconds); }, 1000);
+            liveStatus = 'running'; liveInterval = setInterval(() => { liveSeconds++; document.getElementById('live-timer-display').innerText = formatTime(liveSeconds); }, 1000);
             btn.innerText = '⏸️ 休息暂停'; btn.className = 'btn-apple btn-orange';
         } else if(liveStatus === 'running') {
             liveStatus = 'paused'; clearInterval(liveInterval);
@@ -672,36 +737,19 @@
         }
     }
 
-    // 长按防误触处理
-    let pressTimer;
-    const endBtn = document.getElementById('live-btn-end');
-    function startPress(e) {
-        if(e.type === 'mousedown' && e.button !== 0) return; // 仅左键
-        e.preventDefault();
-        if(liveStatus === 'idle' && liveSeconds === 0) return alert("还未开始计时！");
-        endBtn.classList.add('pressing');
-        pressTimer = setTimeout(() => { endLiveClass(); }, 1500); // 1.5秒长按
-    }
+    let pressTimer; const endBtn = document.getElementById('live-btn-end');
+    function startPress(e) { if(e.type === 'mousedown' && e.button !== 0) return; e.preventDefault(); if(liveStatus === 'idle' && liveSeconds === 0) return alert("还未开始计时！"); endBtn.classList.add('pressing'); pressTimer = setTimeout(() => { endLiveClass(); }, 1500); }
     function cancelPress() { endBtn.classList.remove('pressing'); clearTimeout(pressTimer); }
     endBtn.addEventListener('mousedown', startPress); endBtn.addEventListener('mouseup', cancelPress); endBtn.addEventListener('mouseleave', cancelPress);
     endBtn.addEventListener('touchstart', startPress, {passive: false}); endBtn.addEventListener('touchend', cancelPress);
 
     function endLiveClass() {
         cancelPress(); clearInterval(liveInterval); liveStatus = 'idle';
-        let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间费用):", "");
-        if(summary === null) summary = ""; // clicked cancel
-
-        let now = new Date();
-        let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); // 推算出一个完美贴合计费引擎的起始时间
-        
+        let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间费用):", ""); if(summary === null) summary = ""; 
+        let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
         let cbs = document.querySelectorAll('.live-student-cb:checked');
-        cbs.forEach(cb => {
-            let s = students.find(x => x.id == cb.value);
-            if(s) s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false });
-        });
-        saveData(); 
-        alert(`已结算！共有效上课 ${formatTime(liveSeconds)}，已自动为勾选的学生录入时长与费用。`);
-        closeModal('live-run-modal'); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
+        cbs.forEach(cb => { let s = students.find(x => x.id == cb.value); if(s) s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false }); });
+        saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}，已自动为勾选的学生录入时长与费用。`); closeModal('live-run-modal'); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
     // ================= 学生档案 & 互动计分 =================
@@ -712,8 +760,7 @@
         const s = students.find(x => x.id === currentStudentId);
         document.getElementById('detail-title').innerText = `档案: ${s.name} (${s.className || '无班级'})`;
         const content = document.getElementById('detail-content');
-        const isManager = currentUser.role !== 'student';
-        const isAdmin = currentUser.role === 'admin';
+        const isManager = currentUser.role !== 'student', isAdmin = currentUser.role === 'admin';
         
         let html = '';
         if (isAdmin) {
@@ -731,9 +778,7 @@
                     html += `<div class="item-card"><div style="font-weight:600;">账单 - ${b.month}</div><div style="font-size:20px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtn}</div>`;
                 });
             } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">暂无已出账单</div>`; }
-        } else {
-            html += `<div class="section-title">📚 我的学习记录</div>`;
-        }
+        } else { html += `<div class="section-title">📚 我的学习记录</div>`; }
 
         html += `<div class="section-title">📌 历史动态轨迹</div>`;
         html += `<div style="color:var(--text-muted); font-size:12px; margin-bottom:8px;">▶ 课堂纪实列表</div>`;
@@ -796,7 +841,7 @@
     function addTeacher() {
         const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim();
         if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在");
-        staffAccounts[un] = { role: 'teacher', name, password: pw }; saveData(); closeModal('add-teacher-modal'); alert("添加成功");
+        staffAccounts[un] = { role: 'teacher', name, password: pw }; saveData(); renderTable(); closeModal('add-teacher-modal'); alert("添加成功");
     }
     function openAccountModal() { document.getElementById('setting-username').value = currentUser.username; document.getElementById('account-modal').style.display = 'flex'; }
     function changeAccount() {
