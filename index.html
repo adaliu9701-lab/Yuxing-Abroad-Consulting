@@ -85,13 +85,13 @@
         
         .main-grid { display: flex; gap: 20px; align-items: flex-start; }
         .main-grid .left-col { flex: 3; min-width: 0; } 
-        .main-grid .right-col { flex: 1; min-width: 0; } 
+        .main-grid .right-col { flex: 1.1; min-width: 0; } /* 稍微加宽右侧，防止破行 */
         @media(max-width: 900px) { .main-grid { flex-direction: column; } }
 
         .table-wrap { overflow: hidden; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { padding: 16px; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        td { padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: middle; }
+        td { padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: middle; white-space: nowrap; } /* 防止单元格文字换行破行 */
         tr:hover td { background: rgba(255,255,255,0.5); }
         .click-name { color: var(--accent-blue); font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; }
         .click-name:hover { opacity: 0.7; }
@@ -245,6 +245,7 @@
     </div>
 </div>
 
+<!-- 财务图表大屏 (支持实时重绘) -->
 <div class="modal-overlay" id="finance-modal">
     <div class="modal-container" style="max-width: 900px; background: rgba(255,255,255,0.95); backdrop-filter:blur(30px);">
         <div class="modal-header">
@@ -450,7 +451,7 @@
 <script>
     // ================= 云端数据库配置 =================
     const BIN_ID = '6a918b46da38895dfe1c493f'; 
-    const API_KEY = "$2a$10$fcJHZXRJVwHg0KkR0HtA../qbddedOMz/RycWGOgxXSD3ydbgjGeG"; // 云端数据库 Master Key
+    const API_KEY = "$2a$10$fcJHZXRJVwHg0KkR0HtA../qbddedOMz/RycWGOgxXSD3ydbgjGeG"; 
     const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
     let staffAccounts = { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员' } };
@@ -518,6 +519,10 @@
                 statusEl.innerText = '☁️ 云端已同步';
                 setTimeout(() => statusEl.classList.remove('show'), 2000);
             }
+            // 如果当前财务大屏开着，实时重新绘制图表
+            if(document.getElementById('finance-modal').style.display === 'flex') {
+                openFinanceDashboard();
+            }
         }).catch(err => {
             console.error(err);
             if(statusEl) { statusEl.innerText = '⚠️ 同步失败，已存本地'; setTimeout(() => statusEl.classList.remove('show'), 3000); }
@@ -568,7 +573,11 @@
                 }
             }
         });
-        if(changed) { saveData(); if(currentUser && currentUser.role === 'admin') renderAdminDashboard(); if(document.getElementById('detail-modal').style.display === 'flex') renderStudentDetails(); }
+        if(changed) { 
+            saveData(); 
+            if(currentUser && currentUser.role === 'admin') renderAdminDashboard(); 
+            if(document.getElementById('detail-modal').style.display === 'flex') renderStudentDetails(); 
+        }
     }
 
     function handleLogin() {
