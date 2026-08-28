@@ -245,15 +245,14 @@
     </div>
 </div>
 
-<!-- 财务图表大屏 (实时反映全校应收与各学生贡献) -->
 <div class="modal-overlay" id="finance-modal">
     <div class="modal-container" style="max-width: 900px; background: rgba(255,255,255,0.95); backdrop-filter:blur(30px);">
         <div class="modal-header">
-            <h2>📊 予行财务数据中心 (实时应收看板)</h2>
+            <h2>📊 予行财务数据中心 (实时看板)</h2>
             <button class="close-btn" onclick="closeModal('finance-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title">各月份应收课时费总额趋势 (Trend)</div>
+            <div class="section-title">学生个人累计创收贡献排名 (Trend)</div>
             <div class="chart-container"><canvas id="chart-monthly"></canvas></div>
             <div class="section-title" style="margin-top:30px;">学生创收总额占比 (Distribution)</div>
             <div class="chart-container" style="height: 400px; display:flex; justify-content:center;"><canvas id="chart-students"></canvas></div>
@@ -589,19 +588,17 @@
         }
     }
 
-    // ================= 实时财务看板 (基于已打卡上课时间实时统计) =================
+    // ================= 实时财务看板 (完全基于实际打卡计算) =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         
         students.forEach(s => {
-            // 实时统计所有已完成打卡的课时费总额
             (s.attendance || []).forEach(a => {
                 if(a.endTime && a.startTime) {
                     let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000;
                     if(hrs > 0) totalGenerated += hrs * (s.hourlyRate || 0);
                 }
             });
-            // 统计账单中的已结清与未结清
             (s.bills || []).forEach(b => {
                 if(b.status === 'paid') totalPaid += b.amount;
             });
@@ -797,10 +794,8 @@
         if (isManager) {
             html += `<div class="item-card flex-row" style="background:#fff3e0; border:none;"><strong style="color:var(--accent-orange)">本课积分：</strong><input type="number" class="input-elegant" style="margin:0; width:100px; padding:6px; font-weight:bold;" value="${s.totalPoints || 0}" onchange="updateStudentTotalPoints(this.value)"></div>`;
             
-            // 实时财务账单列表
             html += `<div class="section-title">💰 财务与催费单</div>`;
             
-            // 自动计算当前未结费用
             let currentUnpaidCost = 0;
             (s.attendance || []).forEach(a => {
                 if(a.endTime && a.startTime && !a.billed) {
@@ -852,10 +847,9 @@
 
     function generateBillForStudent(studentId, amount) {
         let s = students.find(x => x.id === studentId);
-        let monthStr = new Date().toISOString().slice(0, 7); // 当前年月
+        let monthStr = new Date().toISOString().slice(0, 7); 
         s.bills = s.bills || [];
         s.bills.push({ id: 'BILL_' + Date.now(), month: monthStr + ' 快捷催费单', amount: amount, status: 'unpaid' });
-        // 将未结打卡记录标记为已出账
         (s.attendance || []).forEach(a => { if(a.endTime && !a.billed) a.billed = true; });
         saveData(); renderStudentDetails(); alert("已成功生成催费账单！");
     }
@@ -872,8 +866,11 @@
 
     let clickTimers = {};
     function handlePointClick(id) {
-        if (!clickTimers[id]) { clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); } 
-        else { clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1); }
+        if (!clickTimers[id]) {
+            clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); 
+        } else {
+            clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1);
+        }
     }
     function openClassSelectModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
@@ -920,8 +917,12 @@
         const pad = n => n < 10 ? '0' + n : n;
         return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     }
+    
+    // 财务大屏图表渲染 (完全按各学生的实时上课费计算贡献度，保证与总体数据完美匹配)
     function openFinanceDashboard() {
-        document.getElementById('finance-modal').style.display = 'flex'; let monthlyData = {}, studentData = {};
+        document.getElementById('finance-modal').style.display = 'flex'; 
+        let studentData = {};
+        
         students.forEach(s => {
             let sTotal = 0; 
             (s.attendance || []).forEach(a => {
@@ -932,10 +933,26 @@
             });
             if (sTotal > 0) studentData[s.name] = sTotal;
         });
+
         if(chartMonthly) chartMonthly.destroy();
-        chartMonthly = new Chart(document.getElementById('chart-monthly'), { type: 'bar', data: { labels: Object.keys(studentData), datasets: [{ label: '学生累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
+        chartMonthly = new Chart(document.getElementById('chart-monthly'), { 
+            type: 'bar', 
+            data: { 
+                labels: Object.keys(studentData), 
+                datasets: [{ label: '学生累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false } 
+        });
+
         if(chartStudents) chartStudents.destroy();
-        chartStudents = new Chart(document.getElementById('chart-students'), { type: 'doughnut', data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } });
+        chartStudents = new Chart(document.getElementById('chart-students'), { 
+            type: 'doughnut', 
+            data: { 
+                labels: Object.keys(studentData), 
+                datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } 
+        });
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
