@@ -153,7 +153,7 @@
             <button class="btn-apple btn-green admin-only" style="width: auto;" onclick="openAddTeacherModal()">+ 新增教师</button>
             <button class="btn-apple btn-purple manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 发布班级作业</button>
             <button class="btn-apple btn-orange manage-only" style="width: auto;" onclick="openClassSelectModal()">✨ 课堂加扣分</button>
-            <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
+            <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生(排课)</button>
         </div>
     </div>
 
@@ -176,7 +176,7 @@
                 <tr>
                     <th>姓名 / Name</th>
                     <th>班级 / Class</th>
-                    <th>总积分</th>
+                    <th>本课积分</th>
                     <th>操作 / Status</th>
                 </tr>
             </thead>
@@ -222,24 +222,25 @@
 <div class="modal-overlay" id="add-modal">
     <div class="modal-container">
         <div class="modal-header">
-            <h2>添加学生</h2>
+            <h2>添加学生 / 报名新课</h2>
             <button class="close-btn" onclick="closeModal('add-modal')">&times;</button>
         </div>
         <div class="modal-body">
+            <p style="font-size:13px; color:var(--text-muted); margin-top:0;">💡 提示：如果学生已在系统中，填入相同的账号和密码，即可为该学生分配新的班级。</p>
             <div class="flex-row">
                 <input type="text" id="new-name" class="input-elegant" placeholder="姓名 / Name">
                 <input type="text" id="new-class" class="input-elegant" placeholder="所属班级 (如: 创意A班)">
             </div>
             <div class="flex-row">
                 <input type="number" id="new-hourly-rate" class="input-elegant" placeholder="课时费 ￥/hr (仅管理员可见)">
-                <input type="number" id="new-initial-points" class="input-elegant" placeholder="已有初始积分 (选填)">
+                <input type="number" id="new-initial-points" class="input-elegant" placeholder="本课初始积分 (选填)">
             </div>
             <div class="section-title">分配登录账号</div>
             <div class="flex-row">
                 <input type="text" id="new-username" class="input-elegant" placeholder="账号名">
                 <input type="text" id="new-password" class="input-elegant" value="111111">
             </div>
-            <button class="btn-apple" onclick="addStudent()">完成创建</button>
+            <button class="btn-apple" onclick="addStudent()">完成录入</button>
         </div>
     </div>
 </div>
@@ -305,19 +306,22 @@
 </div>
 
 <script>
-    // --- 数据存储 ---
-    let staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v4')) || {
-        'admin': { password: 'admin123', role: 'admin', name: '系统管理员' }
-    };
+    // --- 数据存储与迁移 ---
+    // 为了防止数据丢失，新版本 v5 会自动读取 v4 的数据（如果存在的话）
+    let staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v5')) || 
+                        JSON.parse(localStorage.getItem('yuxing_staff_v4')) || 
+                        { 'admin': { password: 'admin123', role: 'admin', name: '系统管理员' } };
 
-    let students = JSON.parse(localStorage.getItem('yuxing_students_v4')) || [];
+    let students = JSON.parse(localStorage.getItem('yuxing_students_v5')) || 
+                   JSON.parse(localStorage.getItem('yuxing_students_v4')) || [];
+    
     let currentUser = null; 
     let currentStudentId = null;
     let tempClassPoints = {}; 
 
     function saveData() {
-        localStorage.setItem('yuxing_staff_v4', JSON.stringify(staffAccounts));
-        localStorage.setItem('yuxing_students_v4', JSON.stringify(students));
+        localStorage.setItem('yuxing_staff_v5', JSON.stringify(staffAccounts));
+        localStorage.setItem('yuxing_students_v5', JSON.stringify(students));
     }
 
     // --- 账单结算引擎 (每月7号8点) ---
@@ -357,13 +361,18 @@
     function handleLogin() {
         const u = document.getElementById('login-username').value.trim();
         const p = document.getElementById('login-password').value.trim();
+        
+        // 教师/管理员登录
         if (staffAccounts[u] && staffAccounts[u].password === p) {
             currentUser = { username: u, role: staffAccounts[u].role, name: staffAccounts[u].name };
             loginSuccess(); return;
         }
-        let st = students.find(x => x.username === u && x.password === p);
-        if (st) {
-            currentUser = { username: u, role: 'student', name: st.name, studentId: st.id };
+        
+        // 学生登录：由于一账多课，我们需要查出所有的身份匹配，但 currentUser 只记录 username
+        let stList = students.filter(x => x.username === u && x.password === p);
+        if (stList.length > 0) {
+            // 只要找到一个匹配的，就允许登录，以 username 记录身份
+            currentUser = { username: u, role: 'student', name: stList[0].name };
             loginSuccess(); return;
         }
         alert("账号或密码错误");
@@ -394,7 +403,6 @@
         if (currentUser.role !== 'student') document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
         if (currentUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
         
-        // 特殊处理admin dashboard的display类型为grid
         if (currentUser.role === 'admin') document.getElementById('admin-dashboard').style.display = 'grid';
     }
 
@@ -415,10 +423,15 @@
         document.getElementById('dash-monthly').innerText = `￥${monthly.toFixed(2)}`;
     }
 
+    // 核心渲染表单 (一账多课体现点)
     function renderTable() {
         const tbody = document.getElementById('student-list-body');
         tbody.innerHTML = '';
-        let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.id === currentUser.studentId));
+        
+        // 如果是学生，查询出所有 username 匹配的记录 (即所有班级)
+        let list = currentUser.role === 'admin' ? students : 
+                  (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : 
+                   students.filter(s => s.username === currentUser.username));
 
         list.forEach(s => {
             const tr = document.createElement('tr');
@@ -465,18 +478,31 @@
         const u = document.getElementById('setting-username').value.trim();
         const p = document.getElementById('setting-password').value.trim();
         if(!u || !p) return alert("不能为空");
-        if (currentUser.username !== u && (staffAccounts[u] || students.find(s=>s.username === u))) return alert("账号名被占用");
+
+        // 防止改名冲突
+        if (currentUser.username !== u) {
+            let conflict = (currentUser.role !== 'student' && students.find(s => s.username === u)) ||
+                           (currentUser.role === 'student' && staffAccounts[u]);
+            if (conflict || (staffAccounts[u] && currentUser.role !== 'student')) return alert("账号名被占用");
+        }
 
         if (currentUser.role === 'student') {
-            let s = students.find(x => x.id === currentUser.studentId);
-            s.username = u; s.password = p;
+            // 同步修改该学生所有课程的账号密码
+            students.forEach(s => {
+                if (s.username === currentUser.username) {
+                    s.username = u; 
+                    s.password = p;
+                }
+            });
         } else {
             let data = staffAccounts[currentUser.username];
             delete staffAccounts[currentUser.username];
             staffAccounts[u] = data; staffAccounts[u].password = p;
             students.forEach(s => { if(s.teacherUsername === currentUser.username) s.teacherUsername = u; });
         }
-        currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功");
+        
+        currentUser.username = u; 
+        saveData(); closeModal('account-modal'); alert("更新成功");
     }
 
     // --- 班级作业批量发布 ---
@@ -506,15 +532,12 @@
         let count = 0;
         
         targetStudents.forEach(s => {
-            // 如果填写了课堂反馈，记录为一条出勤(无起止时间，仅作内容记录)
             if(fb) {
                 s.attendance = s.attendance || [];
                 s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
             }
-            // 如果布置了作业
             if(hwTitle) {
                 s.assignments = s.assignments || [];
-                // 批量发布的作业，留空正确率和得分，等后续批改
                 s.assignments.unshift({ title: hwTitle, content: hwContent, accuracy: "待批改", points: 0, comment: "未评价" });
             }
             count++;
@@ -528,17 +551,14 @@
     let clickTimers = {};
     function handlePointClick(id) {
         if (!clickTimers[id]) {
-            // 开启计时器，等待判断是否会有第二次点击
             clickTimers[id] = setTimeout(() => {
-                // 单击超时，执行加分
-                executePointChange(id, 1);
+                executePointChange(id, 1); // 单击加分
                 delete clickTimers[id];
-            }, 280); // 280ms 是判定双击的常规间隔
+            }, 280); 
         } else {
-            // 在超时前发生了第二次点击，取消单击事件，执行扣分
-            clearTimeout(clickTimers[id]);
+            clearTimeout(clickTimers[id]); // 取消单击
             delete clickTimers[id];
-            executePointChange(id, -1);
+            executePointChange(id, -1); // 双击扣分
         }
     }
 
@@ -576,7 +596,7 @@
         if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative');
         
         card.classList.remove('bump-add', 'bump-sub');
-        void card.offsetWidth; // trigger reflow
+        void card.offsetWidth;
         card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub');
     }
 
@@ -604,7 +624,16 @@
         const initPts = parseInt(document.getElementById('new-initial-points').value) || 0;
         const un = document.getElementById('new-username').value;
         const pw = document.getElementById('new-password').value;
+        
         if(!name || !un) return alert("必填信息不全");
+
+        if(staffAccounts[un]) return alert("账号不可与教职工冲突");
+        
+        // 验证一账多课逻辑：如果系统中已有该学生，密码必须一致
+        let existingUser = students.find(s => s.username === un);
+        if (existingUser && existingUser.password !== pw) {
+            return alert("该账号已被注册。如果是为同一学生报多门课，请确保填入的密码与他之前的密码完全一致！");
+        }
 
         students.push({
             id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate,
@@ -613,7 +642,7 @@
         saveData(); closeModal('add-modal'); renderTable();
     }
 
-    function deleteStudent(id) { if(confirm("彻底删除该学生及其所有数据？")) { students = students.filter(s => s.id !== id); saveData(); renderTable(); } }
+    function deleteStudent(id) { if(confirm("彻底删除该课程记录及其所有数据？")) { students = students.filter(s => s.id !== id); saveData(); renderTable(); } }
 
     // --- 学生详情 (修改积分、财务、评价) ---
     function openStudentDetail(id) { currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex'; }
@@ -626,7 +655,7 @@
 
     function renderStudentDetails() {
         const s = students.find(x => x.id === currentStudentId);
-        document.getElementById('detail-title').innerText = `档案: ${s.name}`;
+        document.getElementById('detail-title').innerText = `档案: ${s.name} (${s.className || '无班级'})`;
         const content = document.getElementById('detail-content');
         const isManager = currentUser.role !== 'student';
         const isAdmin = currentUser.role === 'admin';
@@ -637,7 +666,7 @@
         if (isManager) {
             html += `
             <div class="item-card flex-row" style="background:#fff3e0; border:none;">
-                <strong style="color:var(--accent-orange)">当前总积分：</strong>
+                <strong style="color:var(--accent-orange)">本课当前总积分：</strong>
                 <input type="number" class="input-elegant" style="margin:0; width:100px; padding:6px; font-weight:bold;" value="${s.totalPoints || 0}" onchange="updateStudentTotalPoints(this.value)">
                 <span style="font-size:12px; color:var(--text-muted);">*直接修改并点击空白处自动保存</span>
             </div>`;
