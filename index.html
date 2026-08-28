@@ -144,7 +144,7 @@
         .student-cb-item { display: inline-flex; align-items: center; background: #fff; padding: 6px 12px; border-radius: 20px; margin: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); font-size: 13px; cursor: pointer; }
         .student-cb-item input { margin-right: 6px; }
 
-        .admin-only { display: none; }
+        .admin-only, .manage-only { display: none; }
         #cloud-status { font-size: 13px; color: var(--accent-blue); font-weight: 500; opacity: 0; transition: opacity 0.3s; }
         #cloud-status.show { opacity: 1; }
     </style>
@@ -179,10 +179,11 @@
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
             
-            <button class="btn-apple btn-orange" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
-            <button class="btn-apple btn-purple" style="width: auto;" onclick="openPublishHwModal()">📝 批量打卡与作业</button>
-            <button class="btn-apple btn-secondary" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
-            <button class="btn-apple" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
+            <!-- 开放给教师与管理员共同拥有的日常教学管理权限 -->
+            <button class="btn-apple btn-orange manage-only" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
+            <button class="btn-apple btn-purple manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 批量打卡与作业</button>
+            <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
+            <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
     </div>
 
@@ -536,7 +537,7 @@
         });
     }
 
-    // ================= 会话与安全 (延长至4小时) =================
+    // ================= 会话与安全 (4小时免打断) =================
     let activityTimeout = null;
     function updateActivity() {
         if(!currentUser || activityTimeout) return;
@@ -585,12 +586,18 @@
     }
 
     function getTeacherName(tUn) { return staffAccounts[tUn] ? staffAccounts[tUn].name : '未指派'; }
+    
+    // 权限控制：老师与管理员拥有排课、打卡、互动加分权限
     function applyRolePermissions() {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.admin-only, .manage-only').forEach(el => el.style.display = 'none');
+        
         if (currentUser.role === 'admin') { 
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block'); 
+            document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
             document.getElementById('admin-dashboard').style.display = 'grid'; 
             document.getElementById('teacher-manage-section').style.display = 'block';
+        } else if (currentUser.role === 'teacher') {
+            document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
         }
     }
 
@@ -763,15 +770,16 @@
         saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 =================
+    // ================= 实时课堂秒表 (全面兼容教师端与管理员端数据加载) =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null;
     let activeLiveClass = ''; let activeLiveStudentIds = [];
 
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
 
     function openLiveClassSetup() {
-        let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
-        let myStudents = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
+        // 修复：不管当前是管理员还是普通老师登录，只要点击实时排课，都能完整加载对应的班级和学生课程
+        let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
+        let myStudents = (currentUser.role === 'admin') ? students : students.filter(s => s.teacherUsername === currentUser.username);
 
         let selectHtml = `<option value="" hidden>请选择要上课的班级或学生课程</option>`;
         
@@ -781,6 +789,11 @@
         
         if(myStudents.length > 0) {
             selectHtml += `<optgroup label="按学生独立课程上课 (保护隐私)">` + myStudents.map(s => `<option value="studentrecord_${s.id}">学生: ${s.name} - 课程: ${s.className||'未命名'}</option>`).join('') + `</optgroup>`;
+        }
+
+        // 如果没有任何班级或学生，兜底提示
+        if(myClasses.length === 0 && myStudents.length === 0) {
+            selectHtml += `<option value="" disabled>当前暂无可用班级或学生，请先添加</option>`;
         }
 
         document.getElementById('live-class-select').innerHTML = selectHtml;
@@ -811,7 +824,6 @@
         let selectEl = document.getElementById('live-class-select');
         let cbs = document.querySelectorAll('.live-student-cb:checked');
         
-        // 修复：如果老师刚打开弹窗没在下拉框选任何东西直接点，给出友好提示
         if(!selectEl.value) return alert("请先在下拉菜单中选择一个班级或特定的学生课程！");
         if(cbs.length === 0) return alert("请至少勾选一名上课学生");
         
@@ -931,7 +943,6 @@
                 s.bills.forEach((b, billIdx) => {
                     let statusUI = b.status === 'paid' ? `<span class="badge" style="background:#e3fcef; color:#118d57;">已结清</span>` : `<span class="badge" style="background:#ffebe6; color:#bf2600;">待支付 (催费中)</span>`;
                     
-                    // 新增：确认收款按钮旁边的“撤回并恢复未结清”按钮
                     let actionBtnsHtml = '';
                     if (b.status === 'unpaid') {
                         actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;">` +
@@ -990,12 +1001,10 @@
         if(currentUser.role === 'admin') renderAdminDashboard(); 
     }
 
-    // 新增：撤销催费单并恢复未结清状态
     function revokeBill(studentId, billId) {
         if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return;
         let s = students.find(x => x.id === studentId);
         s.bills = s.bills.filter(b => b.id !== billId);
-        // 将该学生所有已出账标记重置回未出账，以便重新合并计算
         (s.attendance || []).forEach(a => { a.billed = false; });
         saveData(); renderStudentDetails(); 
         if(currentUser.role === 'admin') renderAdminDashboard();
