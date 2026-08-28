@@ -185,22 +185,22 @@
         <div class="kpi-card">
             <h3>待催费/未结清 (Unpaid)</h3>
             <div class="amount" id="dash-pending" style="color: var(--accent-orange);">￥0.00</div>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">所有已上课但尚未付款的学费总额</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">所有学生跨班级/跨课程未付学费总额</div>
         </div>
     </div>
 
     <div class="main-grid">
         <div class="left-col">
-            <div class="section-title" style="margin-top:0;">👨‍🎓 学生档案与记录</div>
+            <div class="section-title" style="margin-top:0;">👨‍🎓 学生档案与记录 (全课程汇总)</div>
             <div class="table-wrap glass-panel">
                 <table>
                     <thead>
                         <tr>
                             <th>姓名 / Name</th>
-                            <th>所属班级 / Class</th>
-                            <th>任课老师 / Teacher</th>
-                            <th>本课积分</th>
-                            <th>操作 / Status</th>
+                            <th>课程/班级档案</th>
+                            <th>任课老师</th>
+                            <th>总积分</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="student-list-body"></tbody>
@@ -248,13 +248,13 @@
 <div class="modal-overlay" id="finance-modal">
     <div class="modal-container" style="max-width: 900px; background: rgba(255,255,255,0.95); backdrop-filter:blur(30px);">
         <div class="modal-header">
-            <h2>📊 予行财务数据中心 (实时看板)</h2>
+            <h2>📊 予行财务数据中心 (全课程聚合实时看板)</h2>
             <button class="close-btn" onclick="closeModal('finance-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title">学生个人累计创收贡献排名 (Trend)</div>
+            <div class="section-title">学生个人全课程累计创收贡献排名</div>
             <div class="chart-container"><canvas id="chart-monthly"></canvas></div>
-            <div class="section-title" style="margin-top:30px;">学生创收总额占比 (Distribution)</div>
+            <div class="section-title" style="margin-top:30px;">学生创收总额占比</div>
             <div class="chart-container" style="height: 400px; display:flex; justify-content:center;"><canvas id="chart-students"></canvas></div>
         </div>
     </div>
@@ -340,7 +340,7 @@
                 <input type="number" id="new-hourly-rate" class="input-elegant" placeholder="课时费 ￥/hr (仅管理员可见)">
                 <input type="number" id="new-initial-points" class="input-elegant" placeholder="本课初始积分 (选填)">
             </div>
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">分配/验证登录账号</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">分配/验证登录账号 (老生报新课请保持账号密码一致)</div>
             <div class="flex-row">
                 <input type="text" id="new-username" class="input-elegant" placeholder="账号名">
                 <input type="text" id="new-password" class="input-elegant" value="111111">
@@ -457,7 +457,7 @@
     let students = [];
     let classGroups = [];
     
-    let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
+    let currentUser = null, currentStudentUsername = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
     // ================= 核心：云端同步引擎 =================
@@ -588,7 +588,7 @@
         }
     }
 
-    // ================= 实时财务看板 (完全基于实际打卡计算) =================
+    // ================= 总体财务大屏引擎 (全课程聚合) =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         
@@ -616,15 +616,60 @@
         if (currentUser && currentUser.role === 'admin') renderTeacherTable();
     }
 
+    // 学生表格：支持一账多课合并聚合展示
     function renderStudentTable() {
         const tbody = document.getElementById('student-list-body'); tbody.innerHTML = '';
-        let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.username === currentUser.username));
-        list.forEach(s => {
-            const tr = document.createElement('tr');
-            let actionHtml = currentUser.role !== 'student' ? `<span class="del-mini" style="position:static; padding:6px 12px;" onclick="deleteStudent(${s.id})">移除档案</span>` : `<span style="color:var(--text-muted); font-size:12px;">查阅详情</span>`;
-            tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetail(${s.id})">${s.name}</span></td><td><span class="badge class">${s.className || '未分配'}</span></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${getTeacherName(s.teacherUsername)}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${s.totalPoints || 0}</td><td>${actionHtml}</td>`;
-            tbody.appendChild(tr);
-        });
+        
+        let list = [];
+        if (currentUser.role === 'admin') {
+            list = students;
+        } else if (currentUser.role === 'teacher') {
+            list = students.filter(s => s.teacherUsername === currentUser.username);
+        } else {
+            list = students.filter(s => s.username === currentUser.username);
+        }
+
+        // 如果是学生端，直接按原本多课程罗列；如果是教师/管理员端，按“学生账号/姓名”进行聚合展示，方便查看该生所有课程
+        if (currentUser.role === 'student') {
+            list.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${s.id})">${s.name}</span></td><td><span class="badge class">${s.className || '未分配'}</span></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${getTeacherName(s.teacherUsername)}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${s.totalPoints || 0}</td><td><span style="color:var(--text-muted); font-size:12px;">查阅详情</span></td>`;
+                tbody.appendChild(tr);
+            });
+        } else {
+            // 按用户名分组聚合
+            let groupedMap = {};
+            list.forEach(s => {
+                let key = s.username || s.id;
+                if(!groupedMap[key]) {
+                    groupedMap[key] = { name: s.name, classes: [], teachers: new Set(), totalPts: 0, ids: [] };
+                }
+                groupedMap[key].classes.push(s.className || '未分配');
+                groupedMap[key].teachers.add(getTeacherName(s.teacherUsername));
+                groupedMap[key].totalPts += (s.totalPoints || 0);
+                groupedMap[key].ids.push(s.id);
+            });
+
+            for(let key in groupedMap) {
+                let g = groupedMap[key];
+                let classBadges = g.classes.map(c => `<span class="badge class" style="margin-right:4px;">${c}</span>`).join('');
+                let teachersStr = [...g.teachers].join(', ');
+                let primaryId = g.ids[0]; // 点击进入第一个档案或管理
+
+                const tr = document.createElement('tr');
+                let actionHtml = `<span class="click-name" onclick="openStudentDetailById(${primaryId})" style="margin-right:12px;">管理档案</span>` +
+                                 `<span class="del-mini" style="position:static; padding:4px 8px;" onclick="deleteStudentGroup('${key}')">移除</span>`;
+                
+                tr.innerHTML = `
+                    <td><span class="click-name" onclick="openStudentDetailById(${primaryId})">${g.name}</span></td>
+                    <td>${classBadges}</td>
+                    <td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${teachersStr}</td>
+                    <td style="font-weight:600; color:var(--accent-orange);">✨ ${g.totalPts}</td>
+                    <td>${actionHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
     }
 
     function renderTeacherTable() {
@@ -685,7 +730,13 @@
         students.push({ id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate, teacherUsername: assignTeacher, totalPoints: initPts, attendance: [], assignments: [], bills: [] });
         saveData(); closeModal('add-modal'); renderTable();
     }
-    function deleteStudent(id) { if(confirm("彻底删除档案？")) { students = students.filter(s => s.id !== id); saveData(); renderTable(); } }
+    function deleteStudent(id) { if(confirm("彻底删除该门课程记录？")) { students = students.filter(s => s.id !== id); saveData(); renderTable(); } }
+    function deleteStudentGroup(usernameKey) {
+        if(confirm("确定彻底移除该学生的所有课程档案吗？")) {
+            students = students.filter(s => s.username !== usernameKey && s.id != usernameKey);
+            saveData(); renderTable();
+        }
+    }
 
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id === currentStudentId).teacherUsername = newUn; saveData(); renderTable(); }
 
@@ -776,25 +827,42 @@
     }
 
     // ================= 学生档案 & 互动计分 =================
-    function openStudentDetail(id) { currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex'; }
-    function updateStudentTotalPoints(val) { students.find(x => x.id === currentStudentId).totalPoints = parseInt(val) || 0; saveData(); renderTable(); }
+    function openStudentDetailById(id) {
+        currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex';
+    }
 
     function renderStudentDetails() {
         const s = students.find(x => x.id === currentStudentId);
-        document.getElementById('detail-title').innerText = `档案: ${s.name} (${s.className || '无班级'})`;
+        if(!s) return;
+        
+        // 如果是以学生身份登录，只能看自己的；如果是管理员/老师，可以查看该学生当前这门课的详情，并且如果他有报多门课，可以罗列出来切换
+        let stList = (currentUser.role === 'student') ? students.filter(x => x.username === currentUser.username) : students.filter(x => x.username === s.username);
+        
+        document.getElementById('detail-title').innerText = `学生档案: ${s.name}`;
         const content = document.getElementById('detail-content');
         const isManager = currentUser.role !== 'student', isAdmin = currentUser.role === 'admin';
         
         let html = '';
+
+        // 如果该学生有多门课，提供课程切换选项卡
+        if(stList.length > 1) {
+            html += `<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">`;
+            stList.forEach(item => {
+                let activeStyle = item.id === s.id ? 'background:var(--accent-blue); color:#fff;' : 'background:rgba(0,0,0,0.05); color:var(--text-main);';
+                html += `<button class="btn-apple" style="width:auto; padding:6px 12px; font-size:12px; ${activeStyle}" onclick="openStudentDetailById(${item.id})">${item.className || '未命名课程'}</button>`;
+            });
+            html += `</div>`;
+        }
+
         if (isAdmin) {
             let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}" ${s.teacherUsername === key ? 'selected' : ''}>${staffAccounts[key].name}</option>`;
-            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">指派专属老师：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
+            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">本课指派老师：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
         }
 
         if (isManager) {
             html += `<div class="item-card flex-row" style="background:#fff3e0; border:none;"><strong style="color:var(--accent-orange)">本课积分：</strong><input type="number" class="input-elegant" style="margin:0; width:100px; padding:6px; font-weight:bold;" value="${s.totalPoints || 0}" onchange="updateStudentTotalPoints(this.value)"></div>`;
             
-            html += `<div class="section-title">💰 财务与催费单</div>`;
+            html += `<div class="section-title">💰 本课程财务与催费单</div>`;
             
             let currentUnpaidCost = 0;
             (s.attendance || []).forEach(a => {
@@ -806,7 +874,7 @@
 
             if(currentUnpaidCost > 0) {
                 html += `<div class="item-card" style="background:rgba(245,99,0,0.05); border:1px solid rgba(245,99,0,0.2);">
-                    <div style="font-weight:600; color:var(--accent-orange);">当前待催费金额 (未结清上课记录)</div>
+                    <div style="font-weight:600; color:var(--accent-orange);">当前待催费金额 (本课程未结清记录)</div>
                     <div style="font-size:22px; font-weight:700; margin-top:4px;">￥${currentUnpaidCost.toFixed(2)}</div>
                     <button class="btn-apple btn-orange" style="position:absolute; right:16px; top:16px; width:auto; padding:6px 14px; font-size:13px;" onclick="generateBillForStudent(${s.id}, ${currentUnpaidCost})">生成正式催费账单</button>
                 </div>`;
@@ -818,9 +886,9 @@
                     let actionBtn = b.status === 'unpaid' ? `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:12px; padding:6px 12px; font-size:13px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button>` : '';
                     html += `<div class="item-card"><div style="font-weight:600;">账单批次: ${b.month}</div><div style="font-size:18px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtn}</div>`;
                 });
-            } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">暂无历史出账账单</div>`; }
+            } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">本课程暂无历史账单</div>`; }
         } else {
-            html += `<div class="section-title">📚 我的学习记录</div>`;
+            html += `<div class="section-title">📚 我的学习记录 (${s.className})</div>`;
         }
 
         html += `<div class="section-title">📌 历史动态轨迹</div>`;
@@ -918,7 +986,7 @@
         return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     }
     
-    // 财务大屏图表渲染 (完全按各学生的实时上课费计算贡献度，保证与总体数据完美匹配)
+    // 财务大屏图表渲染 (聚合全班/全课程贡献)
     function openFinanceDashboard() {
         document.getElementById('finance-modal').style.display = 'flex'; 
         let studentData = {};
@@ -931,7 +999,9 @@
                     if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0);
                 }
             });
-            if (sTotal > 0) studentData[s.name] = sTotal;
+            if (sTotal > 0) {
+                studentData[s.name] = (studentData[s.name] || 0) + sTotal;
+            }
         });
 
         if(chartMonthly) chartMonthly.destroy();
@@ -939,7 +1009,7 @@
             type: 'bar', 
             data: { 
                 labels: Object.keys(studentData), 
-                datasets: [{ label: '学生累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] 
+                datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] 
             }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
