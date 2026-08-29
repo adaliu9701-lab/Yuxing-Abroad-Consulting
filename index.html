@@ -956,7 +956,7 @@
         saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 互动加分悬浮窗 (防投屏隐私优化版) =================
+    // ================= 互动加分悬浮窗 (防投屏隐私 + 修复重复名) =================
     function openClassSelectModal() {
         let html = '';
         if (currentUser.role === 'student') {
@@ -992,11 +992,24 @@
 
         if(targetVal.startsWith('class_')) {
             titleName = `${clsName}`;
-            targetStudents = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
+            targetStudents = students.filter(s => s.className === clsName);
+            if (currentUser.role === 'teacher') {
+                targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username);
+            }
         } else if(targetVal.startsWith('student_')) {
             let sName = targetVal.replace('student_', '');
-            titleName = `${sName}`;
-            targetStudents = students.filter(s => s.name === sName && (currentUser.role === 'student' ? s.username === currentUser.username : (s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username))));
+            
+            // 优化UI体验：如果是学生自己登录，标题显示课程名；如果是老师，标题显示学生名
+            titleName = currentUser.role === 'student' ? `${clsName}` : `${sName}`;
+            
+            // 【修复核心】：严格要求 name 和 className 必须同时匹配，防止跨课程重复拉取
+            targetStudents = students.filter(s => s.name === sName && s.className === clsName);
+            
+            if (currentUser.role === 'teacher') {
+                targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username);
+            } else if (currentUser.role === 'student') {
+                targetStudents = targetStudents.filter(s => s.username === currentUser.username);
+            }
         }
 
         document.getElementById('floating-classroom-title').innerText = `✨ ${titleName} - 计分板`;
@@ -1006,7 +1019,7 @@
             grid.innerHTML += `<div class="student-pt-card" id="card-${s.id}" onclick="handlePointClick(${s.id})"><div class="name">${s.name}</div><div class="pts" id="pt-${s.id}">+0</div></div>`;
         });
         
-        // 显示并重置悬浮窗位置
+        // 显示悬浮窗
         let floatBox = document.getElementById('floating-points-box');
         floatBox.style.display = 'block';
     }
