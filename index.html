@@ -132,19 +132,25 @@
         .flex-row { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
         .section-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 24px 0 12px; letter-spacing: 0.5px; }
         
-        /* 悬浮窗计时器面板样式 */
-        #floating-timer-box {
-            position: fixed; bottom: 20px; right: 20px; width: 300px; background: rgba(255, 255, 255, 0.95);
+        /* 自由拖拽悬浮窗公共样式 */
+        .floating-box {
+            position: fixed; background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-lg);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; padding: 16px; display: none; animation: scaleIn 0.3s var(--ease-apple);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; padding: 16px; display: none; 
+            animation: scaleIn 0.3s var(--ease-apple);
         }
+        .drag-handle { cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px; user-select: none; }
+
+        #floating-timer-box { bottom: 20px; right: 20px; width: 300px; }
         .float-timer-display { font-size: 28px; font-weight: 700; text-align: center; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 8px 0; }
+        
+        #floating-points-box { top: 100px; right: 20px; width: 340px; }
 
         .student-checkbox-list { background: rgba(0,0,0,0.02); border-radius: 12px; padding: 12px; max-height: 150px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.05); margin-bottom:16px; }
         .student-cb-item { display: inline-flex; align-items: center; background: #fff; padding: 6px 12px; border-radius: 20px; margin: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); font-size: 13px; cursor: pointer; }
         .student-cb-item input { margin-right: 6px; }
 
-        .admin-only, .manage-only { display: none; }
+        .admin-only, .manage-only, .can-interact { display: none; }
         #cloud-status { font-size: 13px; color: var(--accent-blue); font-weight: 500; opacity: 0; transition: opacity 0.3s; }
         #cloud-status.show { opacity: 1; }
     </style>
@@ -179,10 +185,11 @@
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
             
-            <!-- 开放给教师与管理员共同拥有的日常教学管理权限 -->
-            <button class="btn-apple btn-orange manage-only" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
+            <!-- 增加 can-interact 权限，包含学生也可以使用 -->
+            <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
+            <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
+            
             <button class="btn-apple btn-purple manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 批量打卡与作业</button>
-            <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
             <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
     </div>
@@ -205,13 +212,19 @@
 
     <div class="main-grid">
         <div class="left-col">
-            <div class="section-title" style="margin-top:0;">👨‍🎓 学生档案与记录 (全课程汇总)</div>
+            <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                👨‍🎓 学生档案与记录
+                <!-- 隐私保护筛选栏 -->
+                <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:4px 10px; font-size:12px; height:auto; display:none;" onchange="renderTable()">
+                    <option value="">全班级 / 显示全部</option>
+                </select>
+            </div>
             <div class="table-wrap glass-panel">
                 <table>
                     <thead>
                         <tr>
                             <th>姓名 / Name</th>
-                            <th>课程/班级档案 (点击进入对应课程)</th>
+                            <th>课程/班级档案</th>
                             <th>任课老师</th>
                             <th>总积分</th>
                             <th>操作</th>
@@ -243,17 +256,27 @@
     </div>
 </div>
 
-<!-- ================= 悬浮窗计时器面板 ================= -->
-<div id="floating-timer-box">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.05); padding-bottom:8px;">
+<!-- ================= 可拖拽：计时器悬浮窗 ================= -->
+<div id="floating-timer-box" class="floating-box">
+    <div id="timer-drag-handle" class="drag-handle" title="按住拖动">
         <strong id="float-title" style="font-size:13px; color:var(--accent-orange);">🔴 上课计时中</strong>
-        <span style="font-size:11px; color:var(--text-muted); cursor:pointer;" onclick="minimizeFloatTimer()">收起</span>
+        <span style="font-size:11px; color:var(--text-muted); cursor:pointer;" onclick="minimizeFloatTimer()">收起面板</span>
     </div>
     <div class="float-timer-display" id="float-timer-display">00:00:00</div>
     <div style="display:flex; gap:6px;">
         <button id="float-btn-toggle" class="btn-apple btn-green" style="padding:6px; font-size:13px;" onclick="toggleLiveTimer()">⏸️ 暂停</button>
         <button id="float-btn-end" class="btn-apple btn-long-press" style="background:var(--danger-red); padding:6px; font-size:13px;" onclick="promptEndLiveClass()">下课结算</button>
     </div>
+</div>
+
+<!-- ================= 可拖拽：计分悬浮窗 ================= -->
+<div id="floating-points-box" class="floating-box">
+    <div id="points-drag-handle" class="drag-handle" title="按住拖动">
+        <strong id="floating-classroom-title" style="font-size:13px; color:var(--accent-blue);">✨ 计分板</strong>
+        <span style="font-size:12px; background:var(--accent-green); color:#fff; padding:2px 8px; border-radius:10px; cursor:pointer;" onclick="closeClassroomInteraction()">保存并关闭</span>
+    </div>
+    <div style="color:var(--text-muted); font-size:12px; margin-top:8px;">💡 提示：<b>单击</b>加 1 分，<b>双击</b>扣 1 分。</div>
+    <div class="class-grid" id="floating-classroom-grid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); max-height: 400px; overflow-y:auto; padding-bottom: 10px;"></div>
 </div>
 
 <!-- ================= 模态框区 ================= -->
@@ -412,9 +435,10 @@
             <button class="close-btn" onclick="closeModal('live-setup-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">选择马上要上课的班级或特定课程</div>
+            <!-- 隐私升级：只显示班级下拉框，选中后才展示对应班级的人员 -->
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择上课班级 / 课程</div>
             <select id="live-class-select" class="input-elegant" onchange="renderLiveStudentCheckboxes(this.value)"></select>
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">确认考勤名单 (取消勾选请假学生)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 确认考勤名单 (取消勾选请假学生)</div>
             <div id="live-student-list" class="student-checkbox-list"></div>
             <button class="btn-apple btn-orange" onclick="startLiveClass()">开启悬浮计时</button>
         </div>
@@ -432,25 +456,12 @@
 </div>
 
 <div class="modal-overlay" id="class-select-modal">
-    <div class="modal-container" style="max-width: 400px;">
+    <div class="modal-container" style="max-width: 450px;">
         <div class="modal-header">
-            <h2>选择班级/学生进行互动加分</h2>
+            <h2>选择进行互动的班级</h2>
             <button class="close-btn" onclick="closeModal('class-select-modal')">&times;</button>
         </div>
         <div class="modal-body" id="class-list-body"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="classroom-modal">
-    <div class="modal-container" style="max-width: 800px; background: rgba(255,255,255,0.95);">
-        <div class="modal-header">
-            <h2 id="classroom-title">✨ 课堂互动计分板</h2>
-            <button class="btn-apple btn-green" style="width: auto; padding: 6px 16px;" onclick="closeClassroomInteraction()">存入积分并关闭</button>
-        </div>
-        <div class="modal-body">
-            <p style="color:var(--text-muted); font-size:14px; margin-top:0;">💡 提示：<b>单击</b>加 1 分，<b>双击</b>扣 1 分。老师可在上课时随时调出此面板不影响计时。</p>
-            <div class="class-grid" id="classroom-grid-content"></div>
-        </div>
     </div>
 </div>
 
@@ -467,7 +478,61 @@
     let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
-    // ================= 核心：云端同步引擎 =================
+    // ================= 悬浮窗拖拽功能 =================
+    function makeDraggable(elmnt, handleId) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        var handle = document.getElementById(handleId);
+        if (handle) {
+            handle.onmousedown = dragMouseDown;
+            handle.ontouchstart = dragTouchStart;
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            // 点击某些内部按钮时不触发拖拽
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+        function dragTouchStart(e) {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+            document.ontouchend = closeDragElement;
+            document.ontouchmove = elementTouchDrag;
+        }
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.bottom = 'auto'; // 清除初始的bottom定位
+            elmnt.style.right = 'auto';  // 清除初始的right定位
+        }
+        function elementTouchDrag(e) {
+            pos1 = pos3 - e.touches[0].clientX;
+            pos2 = pos4 - e.touches[0].clientY;
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.bottom = 'auto';
+            elmnt.style.right = 'auto';
+        }
+        function closeDragElement() {
+            document.onmouseup = null; document.onmousemove = null;
+            document.ontouchend = null; document.ontouchmove = null;
+        }
+    }
+
+    // ================= 云端同步引擎 =================
     window.onload = async function() {
         const loginBtn = document.getElementById('login-btn');
         loginBtn.innerText = '正在连接云端...';
@@ -506,6 +571,10 @@
             localStorage.setItem('yuxing_session_v11', JSON.stringify(s));
             loginSuccess(true);
         }
+
+        // 初始化可拖拽面板
+        makeDraggable(document.getElementById('floating-timer-box'), 'timer-drag-handle');
+        makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
     };
 
     function saveData() {
@@ -537,7 +606,7 @@
         });
     }
 
-    // ================= 会话与安全 (4小时免打断) =================
+    // ================= 会话与安全 =================
     let activityTimeout = null;
     function updateActivity() {
         if(!currentUser || activityTimeout) return;
@@ -587,21 +656,23 @@
 
     function getTeacherName(tUn) { return staffAccounts[tUn] ? staffAccounts[tUn].name : '未指派'; }
     
-    // 权限控制：老师与管理员拥有排课、打卡、互动加分权限
+    // ================= 权限控制 =================
     function applyRolePermissions() {
-        document.querySelectorAll('.admin-only, .manage-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.admin-only, .manage-only, .can-interact').forEach(el => el.style.display = 'none');
         
         if (currentUser.role === 'admin') { 
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block'); 
-            document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
+            document.querySelectorAll('.admin-only, .manage-only, .can-interact').forEach(el => el.style.display = 'inline-block');
             document.getElementById('admin-dashboard').style.display = 'grid'; 
             document.getElementById('teacher-manage-section').style.display = 'block';
         } else if (currentUser.role === 'teacher') {
-            document.querySelectorAll('.manage-only').forEach(el => el.style.display = 'inline-block');
+            document.querySelectorAll('.manage-only, .can-interact').forEach(el => el.style.display = 'inline-block');
+        } else if (currentUser.role === 'student') {
+            // 学生也赋予 can-interact 权限，展示排课与计分按钮
+            document.querySelectorAll('.can-interact').forEach(el => el.style.display = 'inline-block');
         }
     }
 
-    // ================= 总体财务大屏引擎 =================
+    // ================= 财务大屏引擎 =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         students.forEach(s => {
@@ -627,6 +698,23 @@
     function renderStudentTable() {
         const tbody = document.getElementById('student-list-body'); tbody.innerHTML = '';
         let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.username === currentUser.username));
+
+        // 隐私过滤：老师和管理员可以通过下拉栏只查看特定班级
+        const filterSelect = document.getElementById('global-class-filter');
+        if (currentUser.role !== 'student') {
+            let myCls = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
+            let currentFilter = filterSelect.value;
+            let fOpts = '<option value="">全班级 / 显示全部</option>';
+            myCls.forEach(c => { fOpts += `<option value="${c.name}" ${currentFilter === c.name ? 'selected' : ''}>${c.name}</option>`; });
+            filterSelect.innerHTML = fOpts;
+            filterSelect.style.display = 'inline-block';
+            
+            if (currentFilter) {
+                list = list.filter(s => s.className === currentFilter);
+            }
+        } else {
+            filterSelect.style.display = 'none';
+        }
 
         if (currentUser.role === 'student') {
             list.forEach(s => {
@@ -683,14 +771,13 @@
         if(!newPw) return alert("密码不能为空");
         if(staffAccounts[un]) { staffAccounts[un].password = newPw; saveData(); closeModal('edit-teacher-pw-modal'); alert(`教师 ${staffAccounts[un].name} 的密码已修改。`); }
     }
-
     function deleteTeacher(un) {
         if(!confirm(`确定移除教师 ${staffAccounts[un].name} 吗？\n该教师名下的班级和学生将自动转交超级管理员接管。`)) return;
         classGroups.forEach(c => { if(c.teacherUsername === un) c.teacherUsername = 'admin'; }); students.forEach(s => { if(s.teacherUsername === un) s.teacherUsername = 'admin'; });
         delete staffAccounts[un]; saveData(); renderTable(); 
     }
 
-    // ================= 班级管理 =================
+    // ================= 班级与学生录入 =================
     function openClassManageModal() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`;
         document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList();
@@ -731,7 +818,6 @@
             saveData(); renderTable();
         }
     }
-
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id === currentStudentId).teacherUsername = newUn; saveData(); renderTable(); }
 
     // ================= 批量打卡与作业 =================
@@ -745,13 +831,11 @@
         document.getElementById('pub-feedback').value = ''; document.getElementById('pub-hw-title').value = ''; document.getElementById('pub-hw-content').value = '';
         document.getElementById('publish-hw-modal').style.display = 'flex';
     }
-
     function renderPubStudentCheckboxes(className) {
         let stList = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="pub-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
         document.getElementById('pub-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">该班级暂无学生</span>';
     }
-
     function publishClassHomework() {
         const cls = document.getElementById('pub-class-select').value; if(!cls) return alert("请先选择班级");
         const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim(), hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim();
@@ -770,34 +854,22 @@
         saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 (全面兼容教师端与管理员端数据加载) =================
+    // ================= 实时课堂秒表 (隐私优化版) =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null;
     let activeLiveClass = ''; let activeLiveStudentIds = [];
 
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
 
     function openLiveClassSetup() {
-        // 修复：不管当前是管理员还是普通老师登录，只要点击实时排课，都能完整加载对应的班级和学生课程
-        let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
-        let myStudents = (currentUser.role === 'admin') ? students : students.filter(s => s.teacherUsername === currentUser.username);
-
-        let selectHtml = `<option value="" hidden>请选择要上课的班级或学生课程</option>`;
-        
-        if(myClasses.length > 0) {
-            selectHtml += `<optgroup label="按班级整体上课">` + myClasses.map(c => `<option value="class_${c.name}">班级: ${c.name} [${c.classType||'常规'}]</option>`).join('') + `</optgroup>`;
+        let sel = document.getElementById('live-class-select');
+        if (currentUser.role === 'student') {
+            let myStudents = students.filter(s => s.username === currentUser.username);
+            sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join('');
+        } else {
+            let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
+            sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join('');
         }
-        
-        if(myStudents.length > 0) {
-            selectHtml += `<optgroup label="按学生独立课程上课 (保护隐私)">` + myStudents.map(s => `<option value="studentrecord_${s.id}">学生: ${s.name} - 课程: ${s.className||'未命名'}</option>`).join('') + `</optgroup>`;
-        }
-
-        // 如果没有任何班级或学生，兜底提示
-        if(myClasses.length === 0 && myStudents.length === 0) {
-            selectHtml += `<option value="" disabled>当前暂无可用班级或学生，请先添加</option>`;
-        }
-
-        document.getElementById('live-class-select').innerHTML = selectHtml;
-        document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级或学生</span>'; 
+        document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级/课程</span>'; 
         document.getElementById('live-setup-modal').style.display = 'flex';
     }
 
@@ -806,7 +878,7 @@
         let stList = [];
         if(targetVal.startsWith('class_')) {
             let clsName = targetVal.replace('class_', '');
-            activeLiveClass = `班级: ${clsName}`;
+            activeLiveClass = `${clsName}`;
             stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
         } else if(targetVal.startsWith('studentrecord_')) {
             let recordId = targetVal.replace('studentrecord_', '');
@@ -816,7 +888,7 @@
                 stList = [targetS]; 
             }
         }
-        let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name} [${s.className}]</label>`).join('');
+        let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
         document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
     }
 
@@ -824,8 +896,8 @@
         let selectEl = document.getElementById('live-class-select');
         let cbs = document.querySelectorAll('.live-student-cb:checked');
         
-        if(!selectEl.value) return alert("请先在下拉菜单中选择一个班级或特定的学生课程！");
-        if(cbs.length === 0) return alert("请至少勾选一名上课学生");
+        if(!selectEl.value) return alert("请先选择班级或课程！");
+        if(cbs.length === 0) return alert("请至少确认一名考勤学生");
         
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value);
         closeModal('live-setup-modal'); 
@@ -869,29 +941,100 @@
     floatEndBtn.addEventListener('mousedown', startFloatPress); floatEndBtn.addEventListener('mouseup', cancelFloatPress); floatEndBtn.addEventListener('mouseleave', cancelFloatPress);
     floatEndBtn.addEventListener('touchstart', startFloatPress, {passive: false}); floatEndBtn.addEventListener('touchend', cancelFloatPress);
 
-    function promptEndLiveClass() {
-        alert("💡 提示：为了防止误触，请【长按 1.5 秒】此按钮来完成下课结算！");
-    }
-
+    function promptEndLiveClass() { alert("💡 提示：为了防止误触，请【长按 1.5 秒】此按钮来完成下课结算！"); }
     function executeEndLiveClass() {
         cancelFloatPress(); clearInterval(liveInterval); liveStatus = 'idle';
         document.getElementById('floating-timer-box').style.display = 'none';
 
-        let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间费用):", ""); if(summary === null) summary = ""; 
+        let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间):", ""); if(summary === null) summary = ""; 
         let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
         
         activeLiveStudentIds.forEach(id => {
             let s = students.find(x => x.id == id);
             if(s) s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false });
         });
-        saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}，已自动为出勤学生录入时长与费用。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
+        saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 学生档案与互动加分 =================
+    // ================= 互动加分悬浮窗 (防投屏隐私优化版) =================
+    function openClassSelectModal() {
+        let html = '';
+        if (currentUser.role === 'student') {
+            let myStudents = students.filter(s => s.username === currentUser.username);
+            html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`;
+            html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join('');
+        } else {
+            let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
+            let optHtml = `<option value="" hidden>第一步：先选择一个班级</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            html += `<select class="input-elegant" style="margin-bottom:16px;" onchange="renderClassroomIntOptions(this.value)">${optHtml}</select>`;
+            html += `<div id="classroom-int-options"></div>`;
+        }
+        document.getElementById('class-list-body').innerHTML = html;
+        document.getElementById('class-select-modal').style.display = 'flex';
+    }
+
+    function renderClassroomIntOptions(className) {
+        if(!className) return;
+        let targetStudents = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
+        let uniqueNames = [...new Set(targetStudents.map(s => s.name))];
+
+        let html = `<button class="btn-apple btn-orange" style="margin-bottom:16px;" onclick="startClassroomInt('class_${className}', '${className}')">✨ 开启班级整体互动计分板</button>`;
+        html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">或针对特定学生开启</div>`;
+        html += uniqueNames.map(n => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${n}', '${className}')">${n}</button>`).join('') || "<p style='color:var(--text-muted);'>暂无学生</p>";
+        
+        document.getElementById('classroom-int-options').innerHTML = html;
+    }
+
+    function startClassroomInt(targetVal, clsName) {
+        closeModal('class-select-modal'); tempClassPoints = {};
+        let targetStudents = [];
+        let titleName = '';
+
+        if(targetVal.startsWith('class_')) {
+            titleName = `${clsName}`;
+            targetStudents = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
+        } else if(targetVal.startsWith('student_')) {
+            let sName = targetVal.replace('student_', '');
+            titleName = `${sName}`;
+            targetStudents = students.filter(s => s.name === sName && (currentUser.role === 'student' ? s.username === currentUser.username : (s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username))));
+        }
+
+        document.getElementById('floating-classroom-title').innerText = `✨ ${titleName} - 计分板`;
+        const grid = document.getElementById('floating-classroom-grid'); grid.innerHTML = '';
+        targetStudents.forEach(s => {
+            tempClassPoints[s.id] = 0;
+            grid.innerHTML += `<div class="student-pt-card" id="card-${s.id}" onclick="handlePointClick(${s.id})"><div class="name">${s.name}</div><div class="pts" id="pt-${s.id}">+0</div></div>`;
+        });
+        
+        // 显示并重置悬浮窗位置
+        let floatBox = document.getElementById('floating-points-box');
+        floatBox.style.display = 'block';
+    }
+
+    let clickTimers = {};
+    function handlePointClick(id) {
+        if (!clickTimers[id]) {
+            clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); 
+        } else {
+            clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1);
+        }
+    }
+    function executePointChange(id, delta) {
+        tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`);
+        ptElem.innerText = tempClassPoints[id] > 0 ? `+${tempClassPoints[id]}` : tempClassPoints[id];
+        if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative');
+        card.classList.remove('bump-add', 'bump-sub'); void card.offsetWidth; card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub');
+    }
+    function closeClassroomInteraction() {
+        for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; }
+        saveData(); renderTable(); 
+        document.getElementById('floating-points-box').style.display = 'none';
+    }
+
+    // ================= 档案详情及其他辅助 =================
     function openStudentDetailById(id) {
         currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex';
     }
-
     function renderStudentDetails() {
         const s = students.find(x => x.id === currentStudentId);
         if(!s) return;
@@ -951,7 +1094,7 @@
                                          `</div>`;
                     } else {
                         actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;">` +
-                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回已结清账单</button>` +
+                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤销已结清账单</button>` +
                                          `</div>`;
                     }
 
@@ -968,14 +1111,14 @@
             let duration = rec.isClassFeedback ? '📝 班级统一反馈' : '';
             if(rec.startTime && rec.endTime) { duration = `${rec.startTime.replace('T',' ')} - ${rec.endTime.split('T')[1] || rec.endTime}`; }
             let costStr = (isAdmin && rec.startTime && rec.endTime) ? `<span class="badge" style="background:rgba(52,199,89,0.1); color:var(--accent-green); margin-left:8px;">￥${(((new Date(rec.endTime)-new Date(rec.startTime))/3600000)*s.hourlyRate).toFixed(2)}</span>` : '';
-            let delBtn = isManager ? `<span class="del-mini" onclick="delRec('att', ${idx})">撤销</span>` : '';
+            let delBtn = isManager ? `<span class="del-mini" style="font-size:11px; color:#ff3b30; cursor:pointer; position:absolute; right:16px; top:16px;" onclick="delRec('att', ${idx})">撤销此条</span>` : '';
             html += `<div class="item-card"><strong>🕒 ${duration}</strong> ${costStr} <div style="margin-top:6px; color:var(--text-muted); font-size:14px;">纪实: ${rec.content || '无'}</div>${delBtn}</div>`;
         });
         if(s.attendance.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无课堂记录</p>`;
 
         html += `<div style="color:var(--text-muted); font-size:12px; margin:16px 0 8px 0;">▶ 课后作业与评价</div>`;
         s.assignments.forEach((hw, idx) => {
-            let delBtn = isManager ? `<span class="del-mini" onclick="delRec('hw', ${idx})">撤销</span>` : '';
+            let delBtn = isManager ? `<span class="del-mini" style="font-size:11px; color:#ff3b30; cursor:pointer; position:absolute; right:16px; top:16px;" onclick="delRec('hw', ${idx})">撤销此条</span>` : '';
             let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">要求: ${hw.content}</div>` : '';
             html += `<div class="item-card"><strong style="font-size:15px;">📖 ${hw.title}</strong><span class="badge class" style="margin-left:8px;">正确率: ${hw.accuracy}</span><span class="badge" style="background:rgba(245,99,0,0.1); color:var(--accent-orange);">得 ${hw.points} 分</span>${hwReq}<div style="margin-top:6px; font-size:14px; color:var(--text-muted);">👨‍🏫 评语: ${hw.comment}</div>${delBtn}</div>`;
         });
@@ -983,7 +1126,9 @@
 
         content.innerHTML = html;
     }
-
+    
+    window.updateStudentTotalPoints = function(newVal) { let s = students.find(x => x.id === currentStudentId); s.totalPoints = parseInt(newVal)||0; saveData(); renderTable(); }
+    
     function generateBillForStudent(studentId, amount) {
         let s = students.find(x => x.id === studentId);
         let monthStr = new Date().toISOString().slice(0, 7); 
@@ -992,7 +1137,6 @@
         (s.attendance || []).forEach(a => { if(a.endTime && !a.billed) a.billed = true; });
         saveData(); renderStudentDetails(); alert("已成功生成催费账单！");
     }
-
     function confirmPayment(billId) { 
         let s = students.find(x => x.id === currentStudentId);
         let b = s.bills.find(x => x.id === billId);
@@ -1000,7 +1144,6 @@
         saveData(); renderStudentDetails(); 
         if(currentUser.role === 'admin') renderAdminDashboard(); 
     }
-
     function revokeBill(studentId, billId) {
         if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return;
         let s = students.find(x => x.id === studentId);
@@ -1010,70 +1153,8 @@
         if(currentUser.role === 'admin') renderAdminDashboard();
         alert("已成功撤销该催费单并恢复未结清状态！");
     }
-
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id === currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
 
-    let clickTimers = {};
-    function handlePointClick(id) {
-        if (!clickTimers[id]) {
-            clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); 
-        } else {
-            clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1);
-        }
-    }
-
-    function openClassSelectModal() {
-        let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
-        let myStudents = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
-        let uniqueStudentNames = [...new Set(myStudents.map(s => s.name))];
-
-        let html = `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">按班级整体互动加分</div>`;
-        html += myClasses.map(c => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('class_${c.name}')">班级互动: ${c.name}</button>`).join('') || "<p style='color:var(--text-muted);'>暂无班级</p>";
-        
-        html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin:16px 0 8px 0;">或按单个学生独立互动加分 (严格保护隐私)</div>`;
-        html += uniqueStudentNames.map(n => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${n}')">学生独立互动: ${n}</button>`).join('') || "<p style='color:var(--text-muted);'>暂无学生</p>";
-
-        document.getElementById('class-list-body').innerHTML = html;
-        document.getElementById('class-select-modal').style.display = 'flex';
-    }
-
-    function startClassroomInt(targetVal) {
-        closeModal('class-select-modal'); tempClassPoints = {};
-        let targetStudents = [];
-        let titleName = '';
-
-        if(targetVal.startsWith('class_')) {
-            let cName = targetVal.replace('class_', '');
-            titleName = `班级: ${cName}`;
-            targetStudents = students.filter(s => s.className === cName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
-        } else if(targetVal.startsWith('student_')) {
-            let sName = targetVal.replace('student_', '');
-            titleName = `学生: ${sName}`;
-            targetStudents = students.filter(s => s.name === sName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
-        }
-
-        document.getElementById('classroom-title').innerText = `✨ ${titleName} - 互动计分`;
-        const grid = document.getElementById('classroom-grid-content'); grid.innerHTML = '';
-        targetStudents.forEach(s => {
-            tempClassPoints[s.id] = 0;
-            let displaySub = targetVal.startsWith('student_') ? `[${s.className}]` : '';
-            grid.innerHTML += `<div class="student-pt-card" id="card-${s.id}" onclick="handlePointClick(${s.id})"><div class="name">${s.name} <span style="font-size:11px; color:var(--text-muted);">${displaySub}</span></div><div class="pts" id="pt-${s.id}">+0</div></div>`;
-        });
-        document.getElementById('classroom-modal').style.display = 'flex';
-    }
-
-    function executePointChange(id, delta) {
-        tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`);
-        ptElem.innerText = tempClassPoints[id] > 0 ? `+${tempClassPoints[id]}` : tempClassPoints[id];
-        if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative');
-        card.classList.remove('bump-add', 'bump-sub'); void card.offsetWidth; card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub');
-    }
-    function closeClassroomInteraction() {
-        for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; }
-        saveData(); renderTable(); closeModal('classroom-modal');
-    }
-
-    // ================= 通用辅助函数 =================
     function openAddTeacherModal() { document.getElementById('new-teacher-name').value = ''; document.getElementById('new-teacher-username').value = ''; document.getElementById('add-teacher-modal').style.display = 'flex'; }
     function addTeacher() {
         const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim();
@@ -1113,7 +1194,6 @@
             data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
-
         if(chartStudents) chartStudents.destroy();
         chartStudents = new Chart(document.getElementById('chart-students'), { 
             type: 'doughnut', 
