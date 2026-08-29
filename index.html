@@ -109,7 +109,7 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-container { background: #fff; width: 100%; max-width: 650px; max-height: 85vh; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; animation: scaleIn 0.3s var(--ease-apple); }
         .modal-header { padding: 20px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.9); }
-        .modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+        .modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; display:flex; align-items:center; gap:10px; }
         .close-btn { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
         .close-btn:hover { color: var(--danger-red); transform: rotate(90deg); }
         .modal-body { padding: 24px; overflow-y: auto; background: #fafafc; }
@@ -185,7 +185,6 @@
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
             
-            <!-- 增加 can-interact 权限，包含学生也可以使用 -->
             <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
             <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
             
@@ -212,12 +211,15 @@
 
     <div class="main-grid">
         <div class="left-col">
-            <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
-                👨‍🎓 学生档案与记录
-                <!-- 隐私保护筛选栏 -->
-                <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:4px 10px; font-size:12px; height:auto; display:none;" onchange="renderTable()">
-                    <option value="">全班级 / 显示全部</option>
-                </select>
+            <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:10px;">
+                <span>👨‍🎓 学生档案与记录</span>
+                <!-- 双重交叉搜索栏：班级下拉 + 姓名搜索 -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:6px 12px; font-size:12px; height:auto; display:none;" onchange="renderTable()">
+                        <option value="">全班级 / 显示全部</option>
+                    </select>
+                    <input type="text" id="global-name-search" class="input-elegant" style="width:160px; margin:0; padding:6px 12px; font-size:12px; height:auto;" placeholder="🔍 搜索学生姓名..." oninput="renderTable()">
+                </div>
             </div>
             <div class="table-wrap glass-panel">
                 <table>
@@ -326,7 +328,7 @@
                 <select id="manage-assign-teacher" class="input-elegant" style="margin:0; flex:1.2; min-width:100px;"></select>
                 <button class="btn-apple" style="width:auto; margin:0;" onclick="createNewClass()">创建班级</button>
             </div>
-            <div class="section-title">已有班级列表 (可随时修改班型与默认任课老师)</div>
+            <div class="section-title">已有班级列表 (可随时修改班名、班型与任课老师，记录将自动同步保留)</div>
             <div id="class-list-manage"></div>
         </div>
     </div>
@@ -400,6 +402,30 @@
     </div>
 </div>
 
+<!-- 新增：转班功能模态框 -->
+<div class="modal-overlay" id="transfer-modal">
+    <div class="modal-container" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>🔄 学生转班</h2>
+            <button class="close-btn" onclick="closeModal('transfer-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:13px; color:var(--text-muted); margin-top:0;">正在为学生 <b id="transfer-student-name" style="color:var(--text-main);"></b> 选择新的班级：</p>
+            <select id="transfer-target-class" class="input-elegant"></select>
+            
+            <div style="margin:16px 0; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
+                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="transfer-keep-records" checked style="margin-top:4px;">
+                    <span>同步保留该生在原班级的考勤打卡、作业及积分等所有历史记录</span>
+                </label>
+                <p style="font-size:12px; color:var(--danger-red); margin-top:8px; margin-bottom:0;">⚠️ 如果取消勾选，该生在这门课的历史记录将被全部清空（相当于重新报名新课）。</p>
+            </div>
+
+            <button class="btn-apple btn-orange" onclick="executeTransferClass()">确认转班</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="publish-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
         <div class="modal-header">
@@ -435,7 +461,6 @@
             <button class="close-btn" onclick="closeModal('live-setup-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- 隐私升级：只显示班级下拉框，选中后才展示对应班级的人员 -->
             <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择上课班级 / 课程</div>
             <select id="live-class-select" class="input-elegant" onchange="renderLiveStudentCheckboxes(this.value)"></select>
             <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 确认考勤名单 (取消勾选请假学生)</div>
@@ -448,7 +473,10 @@
 <div class="modal-overlay" id="detail-modal">
     <div class="modal-container" style="max-width: 780px;">
         <div class="modal-header">
-            <h2 id="detail-title">学生档案</h2>
+            <h2 id="detail-title" style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+                学生档案
+                <span id="transfer-btn-container"></span>
+            </h2>
             <button class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
         </div>
         <div class="modal-body" id="detail-content"></div>
@@ -482,61 +510,42 @@
     function makeDraggable(elmnt, handleId) {
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         var handle = document.getElementById(handleId);
-        if (handle) {
-            handle.onmousedown = dragMouseDown;
-            handle.ontouchstart = dragTouchStart;
-        }
+        if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
 
         function dragMouseDown(e) {
             e = e || window.event;
-            // 点击某些内部按钮时不触发拖拽
             if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
             e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
+            pos3 = e.clientX; pos4 = e.clientY;
+            document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
         }
         function dragTouchStart(e) {
             if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-            document.ontouchend = closeDragElement;
-            document.ontouchmove = elementTouchDrag;
+            pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+            document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag;
         }
         function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            elmnt.style.bottom = 'auto'; // 清除初始的bottom定位
-            elmnt.style.right = 'auto';  // 清除初始的right定位
+            e = e || window.event; e.preventDefault();
+            pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+            pos3 = e.clientX; pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto'; 
         }
         function elementTouchDrag(e) {
-            pos1 = pos3 - e.touches[0].clientX;
-            pos2 = pos4 - e.touches[0].clientY;
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            elmnt.style.bottom = 'auto';
-            elmnt.style.right = 'auto';
+            pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY;
+            pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto';
         }
         function closeDragElement() {
-            document.onmouseup = null; document.onmousemove = null;
-            document.ontouchend = null; document.ontouchmove = null;
+            document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
         }
     }
 
     // ================= 云端同步引擎 =================
     window.onload = async function() {
         const loginBtn = document.getElementById('login-btn');
-        loginBtn.innerText = '正在连接云端...';
-        loginBtn.disabled = true;
+        loginBtn.innerText = '正在连接云端...'; loginBtn.disabled = true;
 
         try {
             let res = await fetch(`${CLOUD_URL}/latest`, { headers: { 'X-Master-Key': API_KEY } });
@@ -562,8 +571,7 @@
             classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v11')) || [];
         }
 
-        loginBtn.innerText = '进入系统';
-        loginBtn.disabled = false;
+        loginBtn.innerText = '进入系统'; loginBtn.disabled = false;
 
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
         if(s && s.user && (Date.now() - s.lastActive < 14400000)) {
@@ -572,7 +580,6 @@
             loginSuccess(true);
         }
 
-        // 初始化可拖拽面板
         makeDraggable(document.getElementById('floating-timer-box'), 'timer-drag-handle');
         makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
     };
@@ -586,20 +593,12 @@
         if(statusEl) { statusEl.innerText = '☁️ 正在同步...'; statusEl.classList.add('show'); }
         
         fetch(CLOUD_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
             body: JSON.stringify({ staffAccounts, students, classGroups })
         }).then(res => {
-            if(statusEl) {
-                statusEl.innerText = '☁️ 云端已同步';
-                setTimeout(() => statusEl.classList.remove('show'), 2000);
-            }
-            if(document.getElementById('finance-modal').style.display === 'flex') {
-                openFinanceDashboard();
-            }
-            if(currentUser && currentUser.role === 'admin') {
-                renderAdminDashboard();
-            }
+            if(statusEl) { statusEl.innerText = '☁️ 云端已同步'; setTimeout(() => statusEl.classList.remove('show'), 2000); }
+            if(document.getElementById('finance-modal').style.display === 'flex') { openFinanceDashboard(); }
+            if(currentUser && currentUser.role === 'admin') { renderAdminDashboard(); }
         }).catch(err => {
             console.error(err);
             if(statusEl) { statusEl.innerText = '⚠️ 同步失败，已存本地'; setTimeout(() => statusEl.classList.remove('show'), 3000); }
@@ -659,15 +658,12 @@
     // ================= 权限控制 =================
     function applyRolePermissions() {
         document.querySelectorAll('.admin-only, .manage-only, .can-interact').forEach(el => el.style.display = 'none');
-        
         if (currentUser.role === 'admin') { 
             document.querySelectorAll('.admin-only, .manage-only, .can-interact').forEach(el => el.style.display = 'inline-block');
-            document.getElementById('admin-dashboard').style.display = 'grid'; 
-            document.getElementById('teacher-manage-section').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'grid'; document.getElementById('teacher-manage-section').style.display = 'block';
         } else if (currentUser.role === 'teacher') {
             document.querySelectorAll('.manage-only, .can-interact').forEach(el => el.style.display = 'inline-block');
         } else if (currentUser.role === 'student') {
-            // 学生也赋予 can-interact 权限，展示排课与计分按钮
             document.querySelectorAll('.can-interact').forEach(el => el.style.display = 'inline-block');
         }
     }
@@ -699,8 +695,10 @@
         const tbody = document.getElementById('student-list-body'); tbody.innerHTML = '';
         let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.username === currentUser.username));
 
-        // 隐私过滤：老师和管理员可以通过下拉栏只查看特定班级
+        // 双重隐私过滤：班级下拉 + 姓名搜索框
         const filterSelect = document.getElementById('global-class-filter');
+        const nameSearchInput = document.getElementById('global-name-search').value.trim().toLowerCase();
+
         if (currentUser.role !== 'student') {
             let myCls = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
             let currentFilter = filterSelect.value;
@@ -708,12 +706,14 @@
             myCls.forEach(c => { fOpts += `<option value="${c.name}" ${currentFilter === c.name ? 'selected' : ''}>${c.name}</option>`; });
             filterSelect.innerHTML = fOpts;
             filterSelect.style.display = 'inline-block';
-            
-            if (currentFilter) {
-                list = list.filter(s => s.className === currentFilter);
-            }
+            if (currentFilter) { list = list.filter(s => s.className === currentFilter); }
         } else {
             filterSelect.style.display = 'none';
+        }
+
+        // 姓名模糊搜索
+        if (nameSearchInput) {
+            list = list.filter(s => s.name.toLowerCase().includes(nameSearchInput));
         }
 
         if (currentUser.role === 'student') {
@@ -726,9 +726,7 @@
             let groupedMap = {};
             list.forEach(s => {
                 let key = s.username || s.id;
-                if(!groupedMap[key]) {
-                    groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 };
-                }
+                if(!groupedMap[key]) { groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 }; }
                 groupedMap[key].courses.push({ id: s.id, className: s.className || '未分配' });
                 groupedMap[key].teachers.add(getTeacherName(s.teacherUsername));
                 groupedMap[key].totalPts += (s.totalPoints || 0);
@@ -777,7 +775,7 @@
         delete staffAccounts[un]; saveData(); renderTable(); 
     }
 
-    // ================= 班级与学生录入 =================
+    // ================= 班级与学生录入 (含班级重命名与批量换老师) =================
     function openClassManageModal() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`;
         document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList();
@@ -787,18 +785,41 @@
         if(!cName) return; if(classGroups.find(c => c.name === cName)) return alert("名称已存在");
         classGroups.push({ id: Date.now(), name: cName, teacherUsername: tUn, classType: cType }); saveData(); document.getElementById('manage-new-class').value = ''; renderClassManageList(); 
     }
+    
     function renderClassManageList() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name}</option>`;
         let typeOptions = ['一对一','一对二','一对三','一对四','一对六','一对八']; let html = '';
         classGroups.forEach((c, idx) => {
             let typeOptsHtml = typeOptions.map(opt => `<option value="${opt}" ${c.classType === opt ? 'selected' : ''}>${opt}</option>`).join('');
-            html += `<div class="item-card flex-row"><strong style="flex:1; min-width:100px;">${c.name}</strong><select class="input-elegant" style="margin:0; flex:0.8; min-width:90px; margin-right:8px;" onchange="updateClassType(${idx}, this.value)"><option value="" hidden>${c.classType || '未设置'}</option>${typeOptsHtml}</select><select class="input-elegant" style="margin:0; flex:1; min-width:100px;" onchange="updateClassTeacher(${idx}, this.value)"><option value="${c.teacherUsername}" selected hidden>${getTeacherName(c.teacherUsername)}</option>${tOpts}</select><button class="btn-apple" style="background:var(--danger-red); width:auto;" onclick="deleteClass(${idx})">解散</button></div>`;
+            // 班级名称直接变成 input 可以即时修改
+            html += `<div class="item-card flex-row">
+                        <input type="text" class="input-elegant" style="margin:0; flex:1; min-width:110px; font-weight:600; color:var(--accent-blue);" value="${c.name}" title="修改名称" onchange="updateClassName(${idx}, this.value, '${c.name}')">
+                        <select class="input-elegant" style="margin:0; flex:0.8; min-width:90px; margin-right:8px;" title="修改班型" onchange="updateClassType(${idx}, this.value)"><option value="" hidden>${c.classType || '未设置'}</option>${typeOptsHtml}</select>
+                        <select class="input-elegant" style="margin:0; flex:1; min-width:100px;" title="修改默认老师" onchange="updateClassTeacher(${idx}, this.value)"><option value="${c.teacherUsername}" selected hidden>${getTeacherName(c.teacherUsername)}</option>${tOpts}</select>
+                        <button class="btn-apple" style="background:var(--danger-red); width:auto;" onclick="deleteClass(${idx})">解散</button>
+                    </div>`;
         });
         document.getElementById('class-list-manage').innerHTML = html || '<p style="color:var(--text-muted);">暂无班级</p>';
     }
+
+    function updateClassName(idx, newName, oldName) {
+        newName = newName.trim();
+        if(!newName || newName === oldName) return;
+        if(classGroups.find(c => c.name === newName)) { alert("该班级名称已被占用，请换一个名称"); renderClassManageList(); return; }
+        
+        classGroups[idx].name = newName;
+        // 同步修改所有该班级下的学生记录，完美保留其余所有历史信息
+        students.forEach(s => { if(s.className === oldName) s.className = newName; });
+        saveData(); renderClassManageList(); renderTable(); alert("班级名称已更新，对应学生档案已自动同步！");
+    }
+
     function updateClassType(idx, newType) { classGroups[idx].classType = newType; saveData(); alert("班型已更新"); }
-    function updateClassTeacher(idx, newUn) { classGroups[idx].teacherUsername = newUn; students.forEach(s => { if(s.className === classGroups[idx].name) s.teacherUsername = newUn; }); saveData(); renderTable(); alert("班级老师已同步更新"); }
-    function deleteClass(idx) { if(!confirm("解散？学生将未分配")) return; students.forEach(s => { if(s.className === classGroups[idx].name) s.className = ''; }); classGroups.splice(idx, 1); saveData(); renderClassManageList(); renderTable(); }
+    function updateClassTeacher(idx, newUn) { 
+        classGroups[idx].teacherUsername = newUn; 
+        students.forEach(s => { if(s.className === classGroups[idx].name) s.teacherUsername = newUn; }); 
+        saveData(); renderTable(); alert(`已成功将班级 [${classGroups[idx].name}] 的老师更换为 ${getTeacherName(newUn)}，学生的历史记录已完整保留！`); 
+    }
+    function deleteClass(idx) { if(!confirm("确定解散该班级吗？解散后原班级学生将变成'未分配'状态")) return; students.forEach(s => { if(s.className === classGroups[idx].name) s.className = ''; }); classGroups.splice(idx, 1); saveData(); renderClassManageList(); renderTable(); }
 
     function openAddStudentModal() {
         document.getElementById('new-class-select').innerHTML = classGroups.map(c => `<option value="${c.name}">${c.name} (${c.classType||'常规'})</option>`).join('') || '<option value="">无可用班级</option>';
@@ -818,7 +839,13 @@
             saveData(); renderTable();
         }
     }
-    window.updateIndividualTeacher = function(newUn) { students.find(x => x.id === currentStudentId).teacherUsername = newUn; saveData(); renderTable(); }
+    
+    // 单个学生更换老师 (极力强调保留记录)
+    window.updateIndividualTeacher = function(newUn) { 
+        students.find(x => x.id === currentStudentId).teacherUsername = newUn; 
+        saveData(); renderTable();
+        alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`);
+    }
 
     // ================= 批量打卡与作业 =================
     function openPublishHwModal() {
@@ -854,7 +881,7 @@
         saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 (隐私优化版) =================
+    // ================= 实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null;
     let activeLiveClass = ''; let activeLiveStudentIds = [];
 
@@ -895,10 +922,8 @@
     function startLiveClass() {
         let selectEl = document.getElementById('live-class-select');
         let cbs = document.querySelectorAll('.live-student-cb:checked');
-        
         if(!selectEl.value) return alert("请先选择班级或课程！");
         if(cbs.length === 0) return alert("请至少确认一名考勤学生");
-        
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value);
         closeModal('live-setup-modal'); 
         
@@ -907,10 +932,8 @@
             liveSeconds++; 
             document.getElementById('float-timer-display').innerText = formatTime(liveSeconds);
         }, 1000);
-
         document.getElementById('float-title').innerText = `🔴 ${activeLiveClass} 上课中`;
-        document.getElementById('float-btn-toggle').innerText = '⏸️ 暂停';
-        document.getElementById('float-btn-toggle').className = 'btn-apple btn-orange';
+        document.getElementById('float-btn-toggle').innerText = '⏸️ 暂停'; document.getElementById('float-btn-toggle').className = 'btn-apple btn-orange';
         document.getElementById('floating-timer-box').style.display = 'block';
     }
 
@@ -927,11 +950,9 @@
             document.getElementById('float-title').innerText = `🔴 ${activeLiveClass} 上课中`;
         }
     }
-
     function minimizeFloatTimer() {
         let box = document.getElementById('floating-timer-box');
-        let isMin = box.style.width === '140px';
-        box.style.width = isMin ? '300px' : '140px';
+        let isMin = box.style.width === '140px'; box.style.width = isMin ? '300px' : '140px';
         document.getElementById('float-timer-display').style.display = isMin ? 'block' : 'none';
     }
 
@@ -945,10 +966,8 @@
     function executeEndLiveClass() {
         cancelFloatPress(); clearInterval(liveInterval); liveStatus = 'idle';
         document.getElementById('floating-timer-box').style.display = 'none';
-
         let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间):", ""); if(summary === null) summary = ""; 
         let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
-        
         activeLiveStudentIds.forEach(id => {
             let s = students.find(x => x.id == id);
             if(s) s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false });
@@ -956,7 +975,7 @@
         saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 互动加分悬浮窗 (防投屏隐私 + 修复重复名) =================
+    // ================= 互动加分悬浮窗 =================
     function openClassSelectModal() {
         let html = '';
         if (currentUser.role === 'student') {
@@ -977,11 +996,9 @@
         if(!className) return;
         let targetStudents = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
         let uniqueNames = [...new Set(targetStudents.map(s => s.name))];
-
         let html = `<button class="btn-apple btn-orange" style="margin-bottom:16px;" onclick="startClassroomInt('class_${className}', '${className}')">✨ 开启班级整体互动计分板</button>`;
         html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">或针对特定学生开启</div>`;
         html += uniqueNames.map(n => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${n}', '${className}')">${n}</button>`).join('') || "<p style='color:var(--text-muted);'>暂无学生</p>";
-        
         document.getElementById('classroom-int-options').innerHTML = html;
     }
 
@@ -989,48 +1006,30 @@
         closeModal('class-select-modal'); tempClassPoints = {};
         let targetStudents = [];
         let titleName = '';
-
         if(targetVal.startsWith('class_')) {
             titleName = `${clsName}`;
             targetStudents = students.filter(s => s.className === clsName);
-            if (currentUser.role === 'teacher') {
-                targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username);
-            }
+            if (currentUser.role === 'teacher') { targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username); }
         } else if(targetVal.startsWith('student_')) {
             let sName = targetVal.replace('student_', '');
-            
-            // 优化UI体验：如果是学生自己登录，标题显示课程名；如果是老师，标题显示学生名
             titleName = currentUser.role === 'student' ? `${clsName}` : `${sName}`;
-            
-            // 【修复核心】：严格要求 name 和 className 必须同时匹配，防止跨课程重复拉取
             targetStudents = students.filter(s => s.name === sName && s.className === clsName);
-            
-            if (currentUser.role === 'teacher') {
-                targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username);
-            } else if (currentUser.role === 'student') {
-                targetStudents = targetStudents.filter(s => s.username === currentUser.username);
-            }
+            if (currentUser.role === 'teacher') { targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username); } 
+            else if (currentUser.role === 'student') { targetStudents = targetStudents.filter(s => s.username === currentUser.username); }
         }
-
         document.getElementById('floating-classroom-title').innerText = `✨ ${titleName} - 计分板`;
         const grid = document.getElementById('floating-classroom-grid'); grid.innerHTML = '';
         targetStudents.forEach(s => {
             tempClassPoints[s.id] = 0;
             grid.innerHTML += `<div class="student-pt-card" id="card-${s.id}" onclick="handlePointClick(${s.id})"><div class="name">${s.name}</div><div class="pts" id="pt-${s.id}">+0</div></div>`;
         });
-        
-        // 显示悬浮窗
-        let floatBox = document.getElementById('floating-points-box');
-        floatBox.style.display = 'block';
+        document.getElementById('floating-points-box').style.display = 'block';
     }
 
     let clickTimers = {};
     function handlePointClick(id) {
-        if (!clickTimers[id]) {
-            clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); 
-        } else {
-            clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1);
-        }
+        if (!clickTimers[id]) { clickTimers[id] = setTimeout(() => { executePointChange(id, 1); delete clickTimers[id]; }, 280); } 
+        else { clearTimeout(clickTimers[id]); delete clickTimers[id]; executePointChange(id, -1); }
     }
     function executePointChange(id, delta) {
         tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`);
@@ -1044,17 +1043,28 @@
         document.getElementById('floating-points-box').style.display = 'none';
     }
 
-    // ================= 档案详情及其他辅助 =================
+    // ================= 档案详情、换老师与转班 =================
+    let transferTargetStudentId = null;
+
     function openStudentDetailById(id) {
         currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex';
     }
+    
     function renderStudentDetails() {
         const s = students.find(x => x.id === currentStudentId);
         if(!s) return;
         
         let stList = (currentUser.role === 'student') ? students.filter(x => x.username === currentUser.username) : students.filter(x => x.username === s.username);
         
-        document.getElementById('detail-title').innerText = `学生档案: ${s.name}`;
+        document.getElementById('detail-title').childNodes[0].nodeValue = `学生档案: ${s.name} `;
+        
+        // 如果是管理者，在标题旁边添加一个【转班】按钮
+        if (currentUser.role !== 'student') {
+            document.getElementById('transfer-btn-container').innerHTML = `<button class="btn-apple btn-secondary" style="width:auto; padding:4px 10px; font-size:12px; margin-left:8px;" onclick="openTransferClassModal(${s.id})">🔄 跨班转课</button>`;
+        } else {
+            document.getElementById('transfer-btn-container').innerHTML = '';
+        }
+
         const content = document.getElementById('detail-content');
         const isManager = currentUser.role !== 'student', isAdmin = currentUser.role === 'admin';
         
@@ -1071,14 +1081,12 @@
 
         if (isAdmin) {
             let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}" ${s.teacherUsername === key ? 'selected' : ''}>${staffAccounts[key].name}</option>`;
-            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">本课指派老师：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
+            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">单独更换该生任课老师 (保留所有历史记录)：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
         }
 
         if (isManager) {
             html += `<div class="item-card flex-row" style="background:#fff3e0; border:none;"><strong style="color:var(--accent-orange)">本课积分：</strong><input type="number" class="input-elegant" style="margin:0; width:100px; padding:6px; font-weight:bold;" value="${s.totalPoints || 0}" onchange="updateStudentTotalPoints(this.value)"></div>`;
-            
             html += `<div class="section-title">💰 本课程财务与催费单</div>`;
-            
             let currentUnpaidCost = 0;
             (s.attendance || []).forEach(a => {
                 if(a.endTime && a.startTime && !a.billed) {
@@ -1086,7 +1094,6 @@
                     if(hrs > 0) currentUnpaidCost += hrs * (s.hourlyRate || 0);
                 }
             });
-
             if(currentUnpaidCost > 0) {
                 html += `<div class="item-card" style="background:rgba(245,99,0,0.05); border:1px solid rgba(245,99,0,0.2);">
                     <div style="font-weight:600; color:var(--accent-orange);">当前待催费金额 (本课程未结清记录)</div>
@@ -1098,19 +1105,12 @@
             if (s.bills && s.bills.length > 0) {
                 s.bills.forEach((b, billIdx) => {
                     let statusUI = b.status === 'paid' ? `<span class="badge" style="background:#e3fcef; color:#118d57;">已结清</span>` : `<span class="badge" style="background:#ffebe6; color:#bf2600;">待支付 (催费中)</span>`;
-                    
                     let actionBtnsHtml = '';
                     if (b.status === 'unpaid') {
-                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;">` +
-                                         `<button class="btn-apple btn-green" style="padding:6px 10px; font-size:12px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button>` +
-                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回并恢复</button>` +
-                                         `</div>`;
+                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;"><button class="btn-apple btn-green" style="padding:6px 10px; font-size:12px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回并恢复</button></div>`;
                     } else {
-                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;">` +
-                                         `<button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤销已结清账单</button>` +
-                                         `</div>`;
+                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;"><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤销已结清账单</button></div>`;
                     }
-
                     html += `<div class="item-card"><div style="font-weight:600;">账单批次: ${b.month}</div><div style="font-size:18px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtnsHtml}</div>`;
                 });
             } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">本课程暂无历史账单</div>`; }
@@ -1140,31 +1140,65 @@
         content.innerHTML = html;
     }
     
+    // 转班功能处理
+    function openTransferClassModal(studentId) {
+        transferTargetStudentId = studentId;
+        let s = students.find(x => x.id === studentId);
+        if(!s) return;
+        document.getElementById('transfer-student-name').innerText = s.name;
+        document.getElementById('transfer-keep-records').checked = true;
+        
+        let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
+        let opts = `<option value="" hidden>请选择目标班级...</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        document.getElementById('transfer-target-class').innerHTML = opts;
+        
+        document.getElementById('transfer-modal').style.display = 'flex';
+    }
+
+    function executeTransferClass() {
+        let targetClassName = document.getElementById('transfer-target-class').value;
+        let keepRecords = document.getElementById('transfer-keep-records').checked;
+        if(!targetClassName) return alert("请先选择目标班级！");
+        
+        let s = students.find(x => x.id === transferTargetStudentId);
+        if(s.className === targetClassName) return alert("学生当前已经在该班级，无需转移。");
+        
+        let targetClass = classGroups.find(c => c.name === targetClassName);
+        if(!targetClass) return;
+
+        s.className = targetClassName;
+        s.teacherUsername = targetClass.teacherUsername; // 自动继承新班级的老师
+
+        if(!keepRecords) {
+            s.attendance = [];
+            s.assignments = [];
+            s.bills = [];
+            s.totalPoints = 0;
+        }
+
+        saveData();
+        closeModal('transfer-modal');
+        renderTable();
+        // 如果当前详情弹窗没关，自动刷新显示最新的内容
+        if (document.getElementById('detail-modal').style.display === 'flex') {
+            renderStudentDetails();
+        }
+        alert(`已成功将学生 [${s.name}] 转移至班级 [${targetClassName}]。${keepRecords ? '历史记录已同步保留。' : '历史记录已清空，作为全新报名处理。'}`);
+    }
+
     window.updateStudentTotalPoints = function(newVal) { let s = students.find(x => x.id === currentStudentId); s.totalPoints = parseInt(newVal)||0; saveData(); renderTable(); }
     
     function generateBillForStudent(studentId, amount) {
-        let s = students.find(x => x.id === studentId);
-        let monthStr = new Date().toISOString().slice(0, 7); 
-        s.bills = s.bills || [];
-        s.bills.push({ id: 'BILL_' + Date.now(), month: monthStr + ' 快捷催费单', amount: amount, status: 'unpaid' });
+        let s = students.find(x => x.id === studentId); let monthStr = new Date().toISOString().slice(0, 7); 
+        s.bills = s.bills || []; s.bills.push({ id: 'BILL_' + Date.now(), month: monthStr + ' 快捷催费单', amount: amount, status: 'unpaid' });
         (s.attendance || []).forEach(a => { if(a.endTime && !a.billed) a.billed = true; });
         saveData(); renderStudentDetails(); alert("已成功生成催费账单！");
     }
-    function confirmPayment(billId) { 
-        let s = students.find(x => x.id === currentStudentId);
-        let b = s.bills.find(x => x.id === billId);
-        b.status = 'paid'; 
-        saveData(); renderStudentDetails(); 
-        if(currentUser.role === 'admin') renderAdminDashboard(); 
-    }
+    function confirmPayment(billId) { let s = students.find(x => x.id === currentStudentId); let b = s.bills.find(x => x.id === billId); b.status = 'paid'; saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); }
     function revokeBill(studentId, billId) {
         if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return;
-        let s = students.find(x => x.id === studentId);
-        s.bills = s.bills.filter(b => b.id !== billId);
-        (s.attendance || []).forEach(a => { a.billed = false; });
-        saveData(); renderStudentDetails(); 
-        if(currentUser.role === 'admin') renderAdminDashboard();
-        alert("已成功撤销该催费单并恢复未结清状态！");
+        let s = students.find(x => x.id === studentId); s.bills = s.bills.filter(b => b.id !== billId);
+        (s.attendance || []).forEach(a => { a.billed = false; }); saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); alert("已成功撤销该催费单并恢复未结清状态！");
     }
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id === currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
 
@@ -1182,10 +1216,7 @@
         else { let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; }
         currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功");
     }
-    function toLocalISOString(date) {
-        const pad = n => n < 10 ? '0' + n : n;
-        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
-    }
+    function toLocalISOString(date) { const pad = n => n < 10 ? '0' + n : n; return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()); }
     
     function openFinanceDashboard() {
         document.getElementById('finance-modal').style.display = 'flex'; 
@@ -1193,26 +1224,14 @@
         students.forEach(s => {
             let sTotal = 0; 
             (s.attendance || []).forEach(a => {
-                if(a.endTime && a.startTime) {
-                    let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000;
-                    if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0);
-                }
+                if(a.endTime && a.startTime) { let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000; if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0); }
             });
             if (sTotal > 0) { studentData[s.name] = (studentData[s.name] || 0) + sTotal; }
         });
-
         if(chartMonthly) chartMonthly.destroy();
-        chartMonthly = new Chart(document.getElementById('chart-monthly'), { 
-            type: 'bar', 
-            data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, 
-            options: { responsive: true, maintainAspectRatio: false } 
-        });
+        chartMonthly = new Chart(document.getElementById('chart-monthly'), { type: 'bar', data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
         if(chartStudents) chartStudents.destroy();
-        chartStudents = new Chart(document.getElementById('chart-students'), { 
-            type: 'doughnut', 
-            data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, 
-            options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } 
-        });
+        chartStudents = new Chart(document.getElementById('chart-students'), { type: 'doughnut', data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } });
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
