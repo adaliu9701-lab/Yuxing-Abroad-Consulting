@@ -213,10 +213,15 @@
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
             
-            <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时课堂排课</button>
+            <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时上课计时</button>
             <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
             
-            <button class="btn-apple btn-purple manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 批量打卡与作业</button>
+            <!-- 拆分：原批量打卡仅作为漏打卡补录 -->
+            <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 补录打卡</button>
+            
+            <!-- 拆分：全新独立的布置作业入口 -->
+            <button class="btn-apple manage-only" style="background:#5e5ce6; width: auto;" onclick="openAssignHwModal()">📖 布置独立作业</button>
+
             <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
     </div>
@@ -309,6 +314,37 @@
 </div>
 
 <!-- ================= 模态框区 ================= -->
+
+<!-- 独立布置作业模态框 -->
+<div class="modal-overlay" id="assign-hw-modal">
+    <div class="modal-container" style="max-width: 650px;">
+        <div class="modal-header">
+            <h2>📖 布置独立作业</h2>
+            <button class="close-btn" onclick="closeModal('assign-hw-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选需要布置作业的学生</div>
+            <select id="assign-hw-class-select" class="input-elegant" onchange="renderAssignHwStudentCheckboxes(this.value)"></select>
+            <div id="assign-hw-student-list" class="student-checkbox-list"></div>
+
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 关联课程与作业详情</div>
+            <input type="text" id="assign-hw-session" class="input-elegant" placeholder="对应哪一节课？ (如: 秋季班第5讲 或 10月20日课程)">
+            <input type="text" id="assign-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称">
+            <textarea id="assign-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
+            
+            <div style="margin-bottom:16px; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
+                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="assign-hw-requires-submit" checked style="margin-top:4px;">
+                    <span>要求学生在线上提交附件或文字解答</span>
+                </label>
+                <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">提示：如果取消勾选，学生将无需（也无法）在系统内提交作业，您可以直接在档案页对其进行“线下直接批改”。</p>
+            </div>
+
+            <button class="btn-apple btn-purple" onclick="executeAssignStandaloneHw()">发布作业</button>
+        </div>
+    </div>
+</div>
+
 
 <div class="modal-overlay" id="notif-modal">
     <div class="modal-container" style="max-width: 500px;">
@@ -482,15 +518,16 @@
 <div class="modal-overlay" id="publish-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
         <div class="modal-header">
-            <h2>📝 批量打卡与作业发布</h2>
+            <h2>📝 补录打卡与反馈</h2>
             <button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选出勤学生 (排查请假)</div>
+            <p style="font-size:12px; color:var(--accent-orange); margin-top:0;">⚠️ 提示：如果您在平时上课时使用了【实时上课计时】，此页面仅用于写评语（不要填时间）。如果您忘了计时，可以在此补填起止时间自动扣费。</p>
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选出勤学生</div>
             <select id="pub-class-select" class="input-elegant" onchange="renderPubStudentCheckboxes(this.value)"></select>
             <div id="pub-student-list" class="student-checkbox-list"></div>
 
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 补录上课时间与纪实 (选填)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 补录时间与课堂纪实 (选填)</div>
             <div class="flex-row">
                 <input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间">
                 <span style="color:var(--text-muted)">至</span>
@@ -498,11 +535,7 @@
             </div>
             <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
             
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">3. 课后作业布置 (选填)</div>
-            <input type="text" id="pub-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称">
-            <textarea id="pub-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
-            
-            <button class="btn-apple btn-purple" onclick="publishClassHomework()">一键为选中学生打卡并发布</button>
+            <button class="btn-apple btn-secondary" onclick="publishClassHomework()">为选中学生录入打卡档案</button>
         </div>
     </div>
 </div>
@@ -1081,7 +1114,67 @@
         alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`);
     }
 
-    // ================= 批量打卡与作业发布 =================
+    // ================= 独立布置作业 (不产生课时) =================
+    function openAssignHwModal() {
+        let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
+        let sel = document.getElementById('assign-hw-class-select');
+        sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('assign-hw-student-list').innerHTML = ''; 
+        document.getElementById('assign-hw-session').value = '';
+        document.getElementById('assign-hw-title').value = ''; 
+        document.getElementById('assign-hw-content').value = '';
+        document.getElementById('assign-hw-requires-submit').checked = true;
+        document.getElementById('assign-hw-modal').style.display = 'flex';
+    }
+
+    function renderAssignHwStudentCheckboxes(className) {
+        let stList = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
+        let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="assign-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
+        document.getElementById('assign-hw-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">该班级暂无学生</span>';
+    }
+
+    function executeAssignStandaloneHw() {
+        const cls = document.getElementById('assign-hw-class-select').value; 
+        if(!cls) return alert("请先选择班级");
+        const session = document.getElementById('assign-hw-session').value.trim();
+        const hwTitle = document.getElementById('assign-hw-title').value.trim();
+        const hwContent = document.getElementById('assign-hw-content').value.trim();
+        const reqSubmit = document.getElementById('assign-hw-requires-submit').checked;
+
+        if(!hwTitle) return alert("作业题目不能为空！");
+
+        let cbs = document.querySelectorAll('.assign-student-cb:checked'); 
+        if(cbs.length === 0) return alert("请至少勾选一名学生");
+        let actionCount = 0;
+        
+        let fullContent = session ? `【对应课节: ${session}】\n${hwContent}` : hwContent;
+
+        cbs.forEach(cb => {
+            let s = students.find(x => x.id == cb.value);
+            if(s) {
+                let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                s.assignments.unshift({ 
+                    id: newHwId, title: hwTitle, content: fullContent, 
+                    status: "pending", submitContent: "", submitHistory: [],
+                    accuracy: "待批改", points: 0, comment: "未评价",
+                    requiresSubmit: reqSubmit
+                });
+                
+                let notifMsg = reqSubmit 
+                    ? `老师发布了新作业: <b>${hwTitle}</b>，请及时在线上提交！` 
+                    : `老师发布了线下作业: <b>${hwTitle}</b>，本作业无需在线提交，请直接将纸质版或结果交给老师。`;
+                addNotificationToStudent(s.id, notifMsg);
+                actionCount++;
+            }
+        });
+        
+        if(actionCount === 0) return;
+        saveData(); closeModal('assign-hw-modal'); 
+        alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); 
+        renderTable(); 
+    }
+
+    // ================= 批量打卡 (仅补录) =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select');
@@ -1089,7 +1182,7 @@
         document.getElementById('pub-student-list').innerHTML = ''; 
         let now = new Date(); let hrAgo = new Date(now.getTime() - 3600000);
         document.getElementById('pub-start').value = toLocalISOString(hrAgo); document.getElementById('pub-end').value = toLocalISOString(now);
-        document.getElementById('pub-feedback').value = ''; document.getElementById('pub-hw-title').value = ''; document.getElementById('pub-hw-content').value = '';
+        document.getElementById('pub-feedback').value = ''; 
         document.getElementById('publish-hw-modal').style.display = 'flex';
     }
     function renderPubStudentCheckboxes(className) {
@@ -1100,7 +1193,8 @@
     
     function publishClassHomework() {
         const cls = document.getElementById('pub-class-select').value; if(!cls) return alert("请先选择班级");
-        const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim(), hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim();
+        const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim();
+        
         let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
         let actionCount = 0;
         
@@ -1109,21 +1203,11 @@
             if(s) {
                 if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
                 else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
-                
-                if(hwTitle) {
-                    let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-                    s.assignments.unshift({ 
-                        id: newHwId, title: hwTitle, content: hwContent, 
-                        status: "pending", submitContent: "", submitHistory: [],
-                        accuracy: "待批改", points: 0, comment: "未评价" 
-                    });
-                    addNotificationToStudent(s.id, `老师发布了新作业: <b>${hwTitle}</b>，请及时提交！`);
-                }
                 actionCount++;
             }
         });
         if(actionCount === 0) return;
-        saveData(); closeModal('publish-hw-modal'); alert(`成功记录了 ${cbs.length} 名学生的考勤/作业。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
+        saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
     // ================= 实时课堂秒表 =================
@@ -1326,7 +1410,7 @@
         // 渲染时自动将链接转换为可点击的超链接
         document.getElementById('grade-hw-content-disp').innerHTML = hw.submitContent ? formatContent(hw.submitContent) : '无内容';
         
-        document.getElementById('grade-accuracy').value = hw.accuracy === "等待老师批改" ? "" : hw.accuracy;
+        document.getElementById('grade-accuracy').value = hw.accuracy === "等待老师批改" ? "" : (hw.accuracy === "无需线上提交" ? "" : hw.accuracy);
         document.getElementById('grade-points').value = '';
         document.getElementById('grade-comment').value = '';
 
@@ -1361,7 +1445,7 @@
         let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
 
         if(!hw.submitHistory) hw.submitHistory = [];
-        hw.submitHistory.push({ content: hw.submitContent, returnComment: comment, time: toLocalISOString(new Date()) });
+        hw.submitHistory.push({ content: hw.submitContent || '线下提交/无内容', returnComment: comment, time: toLocalISOString(new Date()) });
 
         hw.submitContent = ''; 
         hw.status = 'returned';
@@ -1438,26 +1522,36 @@
         s.assignments.forEach((hw, idx) => {
             let safeHwId = hw.id || hw.title; 
             if(!hw.status) hw.status = (hw.accuracy === "待批改" ? "pending" : "graded");
+            if(hw.requiresSubmit === undefined) hw.requiresSubmit = true; // 兼容老数据
 
             let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">作业要求: ${hw.content}</div>` : '';
             let statusBadge = ''; let actionBtn = '';
             
+            // 状态渲染逻辑
             if (hw.status === 'pending') {
-                statusBadge = `<span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main);">待提交</span>`;
-                if (!isManager) actionBtn = `<button class="btn-apple btn-purple" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 去提交</button>`;
+                if (hw.requiresSubmit) {
+                    statusBadge = `<span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main);">待提交</span>`;
+                    if (!isManager) actionBtn = `<button class="btn-apple btn-purple" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 去提交</button>`;
+                } else {
+                    statusBadge = `<span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main);">线下作业(无需线上提交)</span>`;
+                    if (isManager) actionBtn = `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openGradeHw(${s.id}, '${safeHwId}')">✍️ 直接批改</button>`;
+                }
             } else if (hw.status === 'submitted') {
                 statusBadge = `<span class="badge class" style="background:rgba(0,113,227,0.1); color:var(--accent-blue);">待批改</span>`;
                 if (isManager) actionBtn = `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openGradeHw(${s.id}, '${safeHwId}')">✍️ 批改作业</button>`;
                 else actionBtn = `<span style="position:absolute; right:16px; top:16px; font-size:12px; color:var(--accent-blue);">🕒 老师批改中...</span>`;
             } else if (hw.status === 'returned') {
                 statusBadge = `<span class="badge" style="background:rgba(255,59,48,0.1); color:var(--danger-red);">被打回重做</span>`;
-                if (!isManager) actionBtn = `<button class="btn-apple" style="background:var(--danger-red); position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 重新提交</button>`;
+                if (hw.requiresSubmit && !isManager) {
+                    actionBtn = `<button class="btn-apple" style="background:var(--danger-red); position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 重新提交</button>`;
+                } else if (!hw.requiresSubmit && isManager) {
+                    actionBtn = `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openGradeHw(${s.id}, '${safeHwId}')">✍️ 再次批改(线下)</button>`;
+                }
             } else if (hw.status === 'graded') {
                 statusBadge = `<span class="badge class" style="background:rgba(52,199,89,0.1); color:var(--accent-green);">已批改: ${hw.accuracy}</span><span class="badge" style="background:rgba(245,99,0,0.1); color:var(--accent-orange); margin-left:6px;">得 ${hw.points} 分</span>`;
             }
 
             let commentSec = hw.comment && hw.comment !== "未评价" ? `<div style="margin-top:6px; font-size:13px; color:var(--accent-orange);">👨‍🏫 老师反馈: ${hw.comment}</div>` : '';
-            // 同样，对学生的提交内容也使用 formatContent 以便直接点击链接
             let mySubmitSec = hw.submitContent ? `<div style="margin-top:6px; font-size:13px; color:var(--text-muted); background:#f9f9fb; padding:6px; border-radius:6px; word-break:break-all;"><b>我的提交:</b><br>${formatContent(hw.submitContent)}</div>` : '';
             
             let historySec = '';
