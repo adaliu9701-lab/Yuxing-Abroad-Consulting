@@ -197,9 +197,7 @@
             <div style="margin-top: 8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                 <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openAccountModal()">账号设置</button>
                 <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="forceLogout()">安全退出</button>
-                
                 <button class="btn-apple btn-secondary" id="refresh-btn" style="padding: 6px 12px; font-size: 12px; width: auto; color: var(--accent-orange); font-weight:bold;" onclick="forceRefresh()">🔄 刷新数据</button>
-                
                 <span id="cloud-status" style="margin-left: 4px;">☁️ 云端同步中...</span>
             </div>
         </div>
@@ -207,16 +205,12 @@
             <button class="btn-apple btn-secondary" style="width: auto; position:relative;" onclick="openNotificationsModal()">
                 🔔 通知中心 <span id="nav-notif-badge" class="notif-badge">0</span>
             </button>
-
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
-            
             <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时上课计时</button>
             <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
-            
             <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 补录打卡</button>
             <button class="btn-apple manage-only" style="background:#5e5ce6; width: auto;" onclick="openAssignHwModal()">📖 布置独立作业</button>
-
             <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
     </div>
@@ -242,23 +236,13 @@
             <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:10px;">
                 <span>👨‍🎓 学生档案与记录</span>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:6px 12px; font-size:12px; height:auto; display:none;" onchange="renderTable()">
-                        <option value="">全班级 / 显示全部</option>
-                    </select>
+                    <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:6px 12px; font-size:12px; height:auto; display:none;" onchange="renderTable()"><option value="">全班级 / 显示全部</option></select>
                     <input type="text" id="global-name-search" class="input-elegant" style="width:160px; margin:0; padding:6px 12px; font-size:12px; height:auto;" placeholder="🔍 搜索学生姓名..." oninput="renderTable()">
                 </div>
             </div>
             <div class="table-wrap glass-panel">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>姓名 / Name</th>
-                            <th>课程/班级档案</th>
-                            <th>任课老师</th>
-                            <th>总积分</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>姓名 / Name</th><th>课程/班级档案</th><th>任课老师</th><th>总积分</th><th>操作</th></tr></thead>
                     <tbody id="student-list-body"></tbody>
                 </table>
             </div>
@@ -266,42 +250,23 @@
         
         <div class="right-col admin-only" id="teacher-manage-section">
             <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
-                👩‍🏫 教职工管理
-                <button class="btn-apple btn-green" style="width:auto; padding:4px 10px; font-size:12px;" onclick="openAddTeacherModal()">+ 新增</button>
+                👩‍🏫 教职工管理 <button class="btn-apple btn-green" style="width:auto; padding:4px 10px; font-size:12px;" onclick="openAddTeacherModal()">+ 新增</button>
             </div>
             <div class="table-wrap glass-panel">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>教师姓名</th>
-                            <th>账号</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teacher-list-body"></tbody>
-                </table>
+                <table><thead><tr><th>教师姓名</th><th>账号</th><th>操作</th></tr></thead><tbody id="teacher-list-body"></tbody></table>
             </div>
         </div>
     </div>
 </div>
 
 <div id="floating-timer-box" class="floating-box">
-    <div id="timer-drag-handle" class="drag-handle" title="按住拖动">
-        <strong id="float-title" style="font-size:13px; color:var(--accent-orange);">🔴 上课计时中</strong>
-        <span style="font-size:11px; color:var(--text-muted); cursor:pointer;" onclick="minimizeFloatTimer()">收起面板</span>
-    </div>
+    <div id="timer-drag-handle" class="drag-handle" title="按住拖动"><strong id="float-title" style="font-size:13px; color:var(--accent-orange);">🔴 上课计时中</strong><span style="font-size:11px; color:var(--text-muted); cursor:pointer;" onclick="minimizeFloatTimer()">收起面板</span></div>
     <div class="float-timer-display" id="float-timer-display">00:00:00</div>
-    <div style="display:flex; gap:6px;">
-        <button id="float-btn-toggle" class="btn-apple btn-green" style="padding:6px; font-size:13px;" onclick="toggleLiveTimer()">⏸️ 暂停</button>
-        <button id="float-btn-end" class="btn-apple btn-long-press" style="background:var(--danger-red); padding:6px; font-size:13px;" onclick="promptEndLiveClass()">下课结算</button>
-    </div>
+    <div style="display:flex; gap:6px;"><button id="float-btn-toggle" class="btn-apple btn-green" style="padding:6px; font-size:13px;" onclick="toggleLiveTimer()">⏸️ 暂停</button><button id="float-btn-end" class="btn-apple btn-long-press" style="background:var(--danger-red); padding:6px; font-size:13px;" onclick="promptEndLiveClass()">下课结算</button></div>
 </div>
 
 <div id="floating-points-box" class="floating-box">
-    <div id="points-drag-handle" class="drag-handle" title="按住拖动">
-        <strong id="floating-classroom-title" style="font-size:13px; color:var(--accent-blue);">✨ 计分板</strong>
-        <span style="font-size:12px; background:var(--accent-green); color:#fff; padding:2px 8px; border-radius:10px; cursor:pointer;" onclick="closeClassroomInteraction()">保存并关闭</span>
-    </div>
+    <div id="points-drag-handle" class="drag-handle" title="按住拖动"><strong id="floating-classroom-title" style="font-size:13px; color:var(--accent-blue);">✨ 计分板</strong><span style="font-size:12px; background:var(--accent-green); color:#fff; padding:2px 8px; border-radius:10px; cursor:pointer;" onclick="closeClassroomInteraction()">保存并关闭</span></div>
     <div style="color:var(--text-muted); font-size:12px; margin-top:8px;">💡 提示：<b>单击</b>加 1 分，<b>双击</b>扣 1 分。</div>
     <div class="class-grid" id="floating-classroom-grid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); max-height: 400px; overflow-y:auto; padding-bottom: 10px;"></div>
 </div>
@@ -310,30 +275,20 @@
 
 <div class="modal-overlay" id="assign-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
-        <div class="modal-header">
-            <h2>📖 布置独立作业</h2>
-            <button class="close-btn" onclick="closeModal('assign-hw-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>📖 布置独立作业</h2><button class="close-btn" onclick="closeModal('assign-hw-modal')">&times;</button></div>
         <div class="modal-body">
             <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选需要布置作业的学生</div>
             <select id="assign-hw-class-select" class="input-elegant" onchange="renderAssignHwStudentCheckboxes(this.value)"></select>
             <div id="assign-hw-student-list" class="student-checkbox-list"></div>
-
             <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 关联课程与作业详情</div>
             <input type="text" list="assign-hw-session-list" id="assign-hw-session" class="input-elegant" placeholder="对应哪一节课？ (点击下拉选择该班历史打卡记录，或直接手打)">
             <datalist id="assign-hw-session-list"></datalist>
-            
             <input type="text" id="assign-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称">
             <textarea id="assign-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
-            
             <div style="margin-bottom:16px; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
-                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
-                    <input type="checkbox" id="assign-hw-requires-submit" checked style="margin-top:4px;">
-                    <span>要求学生在线上提交附件或文字解答</span>
-                </label>
+                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;"><input type="checkbox" id="assign-hw-requires-submit" checked style="margin-top:4px;"><span>要求学生在线上提交附件或文字解答</span></label>
                 <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">提示：如果取消勾选，学生将无需在系统内提交，您可以直接在档案页进行“线下批改”。</p>
             </div>
-
             <button class="btn-apple btn-purple" onclick="executeAssignStandaloneHw()">发布作业</button>
         </div>
     </div>
@@ -341,73 +296,40 @@
 
 <div class="modal-overlay" id="notif-modal">
     <div class="modal-container" style="max-width: 500px;">
-        <div class="modal-header">
-            <h2>🔔 通知中心</h2>
-            <button class="close-btn" onclick="closeModal('notif-modal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div id="notif-list-body"></div>
-        </div>
+        <div class="modal-header"><h2>🔔 通知中心</h2><button class="close-btn" onclick="closeModal('notif-modal')">&times;</button></div>
+        <div class="modal-body"><div id="notif-list-body"></div></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="reset-modal">
-    <div class="modal-container" style="max-width: 360px;">
-        <div class="modal-header">
-            <h2>安全重置管理员密码</h2>
-            <button class="close-btn" onclick="closeModal('reset-modal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="text" id="reset-key" class="input-elegant" placeholder="输入超级恢复密钥">
-            <input type="password" id="reset-new-pw" class="input-elegant" placeholder="输入新密码">
-            <button class="btn-apple" onclick="executeResetPassword()">确认重置</button>
-        </div>
-    </div>
+    <div class="modal-container" style="max-width: 360px;"><div class="modal-header"><h2>安全重置管理员密码</h2><button class="close-btn" onclick="closeModal('reset-modal')">&times;</button></div><div class="modal-body"><input type="text" id="reset-key" class="input-elegant" placeholder="输入超级恢复密钥"><input type="password" id="reset-new-pw" class="input-elegant" placeholder="输入新密码"><button class="btn-apple" onclick="executeResetPassword()">确认重置</button></div></div>
 </div>
 
 <div class="modal-overlay" id="finance-modal">
     <div class="modal-container" style="max-width: 900px; background: rgba(255,255,255,0.95); backdrop-filter:blur(30px);">
-        <div class="modal-header">
-            <h2>📊 予行财务数据中心 (全课程聚合实时看板)</h2>
-            <button class="close-btn" onclick="closeModal('finance-modal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="section-title">学生个人全课程累计创收贡献排名</div>
-            <div class="chart-container"><canvas id="chart-monthly"></canvas></div>
-            <div class="section-title" style="margin-top:30px;">学生创收总额占比</div>
-            <div class="chart-container" style="height: 400px; display:flex; justify-content:center;"><canvas id="chart-students"></canvas></div>
-        </div>
+        <div class="modal-header"><h2>📊 予行财务数据中心</h2><button class="close-btn" onclick="closeModal('finance-modal')">&times;</button></div>
+        <div class="modal-body"><div class="section-title">学生创收排名</div><div class="chart-container"><canvas id="chart-monthly"></canvas></div><div class="section-title" style="margin-top:30px;">学生创收占比</div><div class="chart-container" style="height: 400px; display:flex; justify-content:center;"><canvas id="chart-students"></canvas></div></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="class-manage-modal">
     <div class="modal-container" style="max-width: 780px;">
-        <div class="modal-header">
-            <h2>📂 班级与排课管理</h2>
-            <button class="close-btn" onclick="closeModal('class-manage-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>📂 班级与排课管理</h2><button class="close-btn" onclick="closeModal('class-manage-modal')">&times;</button></div>
         <div class="modal-body">
             <div class="item-card flex-row" style="background:#f5f7fa; border:none; margin-bottom:20px;">
                 <input type="text" id="manage-new-class" class="input-elegant" style="margin:0; flex:1.5; min-width:120px;" placeholder="输入新班级名称">
-                <select id="manage-class-type" class="input-elegant" style="margin:0; flex:1; min-width:90px;">
-                    <option value="一对一">一对一</option><option value="一对二">一对二</option><option value="一对三">一对三</option>
-                    <option value="一对四">一对四</option><option value="一对六">一对六</option><option value="一对八">一对八</option>
-                </select>
+                <select id="manage-class-type" class="input-elegant" style="margin:0; flex:1; min-width:90px;"><option value="一对一">一对一</option><option value="一对二">一对二</option><option value="一对三">一对三</option><option value="一对四">一对四</option><option value="一对六">一对六</option><option value="一对八">一对八</option></select>
                 <select id="manage-assign-teacher" class="input-elegant" style="margin:0; flex:1.2; min-width:100px;"></select>
                 <button class="btn-apple" style="width:auto; margin:0;" onclick="createNewClass()">创建班级</button>
             </div>
-            <div class="section-title">已有班级列表 (可随时修改班名、班型与任课老师，记录将自动同步保留)</div>
-            <div id="class-list-manage"></div>
+            <div class="section-title">已有班级列表</div><div id="class-list-manage"></div>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="add-teacher-modal">
     <div class="modal-container" style="max-width: 400px;">
-        <div class="modal-header">
-            <h2>新增教师账号</h2>
-            <button class="close-btn" onclick="closeModal('add-teacher-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>新增教师账号</h2><button class="close-btn" onclick="closeModal('add-teacher-modal')">&times;</button></div>
         <div class="modal-body">
             <input type="text" id="new-teacher-name" class="input-elegant" placeholder="教师真实姓名 (如: 王老师)">
             <input type="text" id="new-teacher-username" class="input-elegant" placeholder="登录账号 (Username)">
@@ -419,39 +341,17 @@
 </div>
 
 <div class="modal-overlay" id="edit-teacher-pw-modal">
-    <div class="modal-container" style="max-width: 360px;">
-        <div class="modal-header">
-            <h2>修改教师密码</h2>
-            <button class="close-btn" onclick="closeModal('edit-teacher-pw-modal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="edit-t-un">
-            <input type="text" id="edit-t-pw" class="input-elegant" placeholder="输入该教师的新密码">
-            <button class="btn-apple" onclick="saveTeacherPw()">保存修改</button>
-        </div>
-    </div>
+    <div class="modal-container" style="max-width: 360px;"><div class="modal-header"><h2>修改教师密码</h2><button class="close-btn" onclick="closeModal('edit-teacher-pw-modal')">&times;</button></div><div class="modal-body"><input type="hidden" id="edit-t-un"><input type="text" id="edit-t-pw" class="input-elegant" placeholder="输入该教师的新密码"><button class="btn-apple" onclick="saveTeacherPw()">保存修改</button></div></div>
 </div>
 
 <div class="modal-overlay" id="account-modal">
     <div class="modal-container" style="max-width: 360px;">
-        <div class="modal-header">
-            <h2>账号与密码设置</h2>
-            <button class="close-btn" onclick="closeModal('account-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>账号与密码设置</h2><button class="close-btn" onclick="closeModal('account-modal')">&times;</button></div>
         <div class="modal-body">
             <input type="text" id="setting-username" class="input-elegant" placeholder="新用户名">
             <input type="password" id="setting-password" class="input-elegant" placeholder="新密码">
-            
-            <div style="margin-top:8px;">
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
-                <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
-            </div>
-
-            <div id="admin-recovery-section" style="display:none; margin-top:8px;">
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥 (用于忘密找回)</div>
-                <input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥">
-            </div>
-
+            <div style="margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div><input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID"></div>
+            <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
             <button class="btn-apple" onclick="changeAccount()">保存修改</button>
         </div>
     </div>
@@ -459,27 +359,13 @@
 
 <div class="modal-overlay" id="add-modal">
     <div class="modal-container">
-        <div class="modal-header">
-            <h2>+ 添加学生 / 报名新课</h2>
-            <button class="close-btn" onclick="closeModal('add-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>+ 添加学生 / 报名新课</h2><button class="close-btn" onclick="closeModal('add-modal')">&times;</button></div>
         <div class="modal-body">
-            <div class="flex-row">
-                <input type="text" id="new-name" class="input-elegant" placeholder="学生姓名" style="flex:1;">
-                <select id="new-class-select" class="input-elegant" style="flex:1;"></select>
-            </div>
-            <div class="flex-row">
-                <input type="number" id="new-hourly-rate" class="input-elegant" placeholder="课时费 ￥/hr (仅管理员可见)">
-                <input type="number" id="new-initial-points" class="input-elegant" placeholder="本课初始积分 (选填)">
-            </div>
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">分配/验证登录账号 (老生报新课请保持账号密码一致)</div>
-            <div class="flex-row">
-                <input type="text" id="new-username" class="input-elegant" placeholder="账号名">
-                <input type="text" id="new-password" class="input-elegant" value="111111">
-            </div>
-            
+            <div class="flex-row"><input type="text" id="new-name" class="input-elegant" placeholder="学生姓名" style="flex:1;"><select id="new-class-select" class="input-elegant" style="flex:1;"></select></div>
+            <div class="flex-row"><input type="number" id="new-hourly-rate" class="input-elegant" placeholder="课时费 ￥/hr (仅管理员可见)"><input type="number" id="new-initial-points" class="input-elegant" placeholder="本课初始积分 (选填)"></div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">分配/验证登录账号</div>
+            <div class="flex-row"><input type="text" id="new-username" class="input-elegant" placeholder="账号名"><input type="text" id="new-password" class="input-elegant" value="111111"></div>
             <input type="text" id="new-wx-uid" class="input-elegant" placeholder="绑定微信推送UID (选填，以 UID_ 开头)">
-            
             <button class="btn-apple" onclick="addStudent()">完成录入</button>
         </div>
     </div>
@@ -487,22 +373,11 @@
 
 <div class="modal-overlay" id="transfer-modal">
     <div class="modal-container" style="max-width: 400px;">
-        <div class="modal-header">
-            <h2>🔄 学生转班</h2>
-            <button class="close-btn" onclick="closeModal('transfer-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>🔄 学生转班</h2><button class="close-btn" onclick="closeModal('transfer-modal')">&times;</button></div>
         <div class="modal-body">
             <p style="font-size:13px; color:var(--text-muted); margin-top:0;">正在为学生 <b id="transfer-student-name" style="color:var(--text-main);"></b> 选择新的班级：</p>
             <select id="transfer-target-class" class="input-elegant"></select>
-            
-            <div style="margin:16px 0; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
-                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
-                    <input type="checkbox" id="transfer-keep-records" checked style="margin-top:4px;">
-                    <span>同步保留该生在原班级的考勤打卡、作业及积分等所有历史记录</span>
-                </label>
-                <p style="font-size:12px; color:var(--danger-red); margin-top:8px; margin-bottom:0;">⚠️ 如果取消勾选，该生在这门课的历史记录将被全部清空（相当于重新报名新课）。</p>
-            </div>
-
+            <div style="margin:16px 0; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;"><label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;"><input type="checkbox" id="transfer-keep-records" checked style="margin-top:4px;"><span>同步保留历史记录</span></label></div>
             <button class="btn-apple btn-orange" onclick="executeTransferClass()">确认转班</button>
         </div>
     </div>
@@ -510,24 +385,15 @@
 
 <div class="modal-overlay" id="publish-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
-        <div class="modal-header">
-            <h2>📝 补录打卡与反馈</h2>
-            <button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>📝 补录打卡与反馈</h2><button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button></div>
         <div class="modal-body">
             <p style="font-size:12px; color:var(--accent-orange); margin-top:0;">⚠️ 提示：如果您在平时上课时使用了【实时上课计时】，此页面仅用于写评语（起止时间默认留空，不会扣费）。只有当您忘记计时需要补录课时，才在此填写时间。</p>
             <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选出勤学生</div>
             <select id="pub-class-select" class="input-elegant" onchange="renderPubStudentCheckboxes(this.value)"></select>
             <div id="pub-student-list" class="student-checkbox-list"></div>
-
             <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 补录时间与课堂纪实 (如已使用实时计时，起止时间请留空)</div>
-            <div class="flex-row">
-                <input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间">
-                <span style="color:var(--text-muted)">至</span>
-                <input type="datetime-local" id="pub-end" class="input-elegant" style="margin:0; flex:1;" title="下课时间">
-            </div>
+            <div class="flex-row"><input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间"><span style="color:var(--text-muted)">至</span><input type="datetime-local" id="pub-end" class="input-elegant" style="margin:0; flex:1;" title="下课时间"></div>
             <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
-            
             <button class="btn-apple btn-secondary" onclick="publishClassHomework()">为选中学生录入打卡档案</button>
         </div>
     </div>
@@ -535,14 +401,11 @@
 
 <div class="modal-overlay" id="live-setup-modal">
     <div class="modal-container" style="max-width: 450px;">
-        <div class="modal-header">
-            <h2>⏱️ 准备开始上课</h2>
-            <button class="close-btn" onclick="closeModal('live-setup-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>⏱️ 准备开始上课</h2><button class="close-btn" onclick="closeModal('live-setup-modal')">&times;</button></div>
         <div class="modal-body">
             <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择上课班级 / 课程</div>
             <select id="live-class-select" class="input-elegant" onchange="renderLiveStudentCheckboxes(this.value)"></select>
-            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 确认考勤名单 (取消勾选请假学生)</div>
+            <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 确认考勤名单</div>
             <div id="live-student-list" class="student-checkbox-list"></div>
             <button class="btn-apple btn-orange" onclick="startLiveClass()">开启悬浮计时</button>
         </div>
@@ -551,68 +414,49 @@
 
 <div class="modal-overlay" id="detail-modal">
     <div class="modal-container" style="max-width: 780px;">
-        <div class="modal-header">
-            <h2 id="detail-title" style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
-                学生档案
-                <span id="transfer-btn-container"></span>
-            </h2>
-            <button class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2 id="detail-title" style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">学生档案<span id="transfer-btn-container"></span></h2><button class="close-btn" onclick="closeModal('detail-modal')">&times;</button></div>
         <div class="modal-body" id="detail-content"></div>
     </div>
 </div>
 
-<!-- 学生提交作业模态框 -->
 <div class="modal-overlay" id="submit-hw-modal">
     <div class="modal-container" style="max-width: 500px;">
-        <div class="modal-header">
-            <h2>📤 提交作业</h2>
-            <button class="close-btn" onclick="closeModal('submit-hw-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>📤 提交作业</h2><button class="close-btn" onclick="closeModal('submit-hw-modal')">&times;</button></div>
         <div class="modal-body">
             <div style="background:#f5f7fa; padding:12px; border-radius:12px; margin-bottom:16px;">
-                <strong style="font-size:14px; display:block; margin-bottom:4px;" id="submit-hw-title-disp"></strong>
-                <span style="font-size:12px; color:var(--text-muted);" id="submit-hw-req-disp"></span>
+                <strong style="font-size:14px; display:block; margin-bottom:4px;" id="submit-hw-title-disp"></strong><span style="font-size:12px; color:var(--text-muted);" id="submit-hw-req-disp"></span>
             </div>
-
             <div style="text-align: center; margin-bottom: 20px; background:rgba(0,113,227,0.03); border:1px dashed var(--accent-blue); padding:16px; border-radius:12px;">
                 <input type="hidden" role="uploadcare-uploader" id="hw-file-uploader" />
-                <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">↑ 点击按钮，支持直接拍摄照片、录音或上传文件 (自动生成链接)</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">↑ 点击按钮，支持直接拍摄照片、录音或上传文件</div>
             </div>
-
             <textarea id="submit-hw-text" class="input-elegant" placeholder="上传后链接会自动填在这里。你也可以在这里输入文字解答..." style="min-height:100px;"></textarea>
-            
             <input type="hidden" id="submit-hw-id">
             <button class="btn-apple btn-purple" onclick="executeSubmitHw()">确认提交作业</button>
         </div>
     </div>
 </div>
 
-<!-- 老师批改作业模态框 (新增老师上传附件功能) -->
 <div class="modal-overlay" id="grade-hw-modal">
     <div class="modal-container" style="max-width: 550px;">
-        <div class="modal-header">
-            <h2>✍️ 批改作业</h2>
-            <button class="close-btn" onclick="closeModal('grade-hw-modal')">&times;</button>
-        </div>
+        <div class="modal-header"><h2>✍️ 批改作业</h2><button class="close-btn" onclick="closeModal('grade-hw-modal')">&times;</button></div>
         <div class="modal-body">
             <div style="background:#f0f5ff; padding:12px; border-radius:12px; margin-bottom:16px;">
                 <strong style="font-size:14px; display:block; margin-bottom:4px; color:var(--accent-blue);" id="grade-hw-title-disp"></strong>
                 <div style="font-size:13px; color:var(--text-main); margin-top:8px;"><b>学生提交内容：</b><br><span id="grade-hw-content-disp" style="word-break:break-all;"></span></div>
             </div>
-
             <div class="flex-row">
                 <input type="text" id="grade-accuracy" class="input-elegant" style="flex:1; margin:0;" placeholder="正确率/等级 (如 90% 或 A+)">
                 <input type="number" id="grade-points" class="input-elegant" style="flex:1; margin:0;" placeholder="本次加分 (选填)">
             </div>
             
+            <!-- 老师端新增的上传控件 -->
             <div style="text-align: center; margin-top: 16px; margin-bottom: 8px; background:rgba(52,199,89,0.03); border:1px dashed var(--accent-green); padding:12px; border-radius:12px;">
                 <input type="hidden" role="uploadcare-uploader" id="grade-file-uploader" />
-                <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">↑ 老师可在此上传批改后的照片或参考答案 (链接自动填入下方)</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">↑ 老师可在此上传批改后的照片或参考答案 (支持全格式)</div>
             </div>
 
-            <textarea id="grade-comment" class="input-elegant" style="margin-top:8px; min-height:80px;" placeholder="输入评价反馈..."></textarea>
-            
+            <textarea id="grade-comment" class="input-elegant" style="margin-top:8px; min-height:80px;" placeholder="在此输入评价反馈，上方附件链接会自动填入..."></textarea>
             <input type="hidden" id="grade-hw-id">
             
             <div style="display:flex; gap:12px; margin-top:8px;">
@@ -624,13 +468,7 @@
 </div>
 
 <div class="modal-overlay" id="class-select-modal">
-    <div class="modal-container" style="max-width: 450px;">
-        <div class="modal-header">
-            <h2>选择进行互动的班级</h2>
-            <button class="close-btn" onclick="closeModal('class-select-modal')">&times;</button>
-        </div>
-        <div class="modal-body" id="class-list-body"></div>
-    </div>
+    <div class="modal-container" style="max-width: 450px;"><div class="modal-header"><h2>选择进行互动的班级</h2><button class="close-btn" onclick="closeModal('class-select-modal')">&times;</button></div><div class="modal-body" id="class-list-body"></div></div>
 </div>
 
 <script>
@@ -644,57 +482,50 @@
     let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
-    // 绑定 Uploadcare 组件 (学生提交和老师批改双向支持)
     window.addEventListener('load', function() {
         const uploaderWidget = uploadcare.Widget('#hw-file-uploader');
         uploaderWidget.onUploadComplete(function(info) {
             const textA = document.getElementById('submit-hw-text');
-            const appendText = `📎 [学生附件: ${info.name}]\n点击查看/下载: ${info.cdnUrl}\n`;
+            const appendText = `📎 [学生附件: ${info.name}]\n点击查阅: ${info.cdnUrl}\n`;
             textA.value = textA.value ? textA.value + '\n' + appendText : appendText;
-            alert("✅ 文件上传成功！链接已自动填入下方输入框。");
-            uploaderWidget.value(null);
+            alert("✅ 上传成功！链接已自动填入下方输入框。"); uploaderWidget.value(null);
         });
 
         const gradeWidget = uploadcare.Widget('#grade-file-uploader');
         gradeWidget.onUploadComplete(function(info) {
             const textA = document.getElementById('grade-comment');
-            const appendText = `📎 [老师附件: ${info.name}]\n点击查看/下载: ${info.cdnUrl}\n`;
+            const appendText = `📎 [老师附件: ${info.name}]\n点击查阅: ${info.cdnUrl}\n`;
             textA.value = textA.value ? textA.value + '\n' + appendText : appendText;
-            alert("✅ 批改附件上传成功！链接已自动填入评价框中。");
-            gradeWidget.value(null);
+            alert("✅ 批改附件上传成功！链接已自动填入评价框中。"); gradeWidget.value(null);
         });
     });
 
-    // 核心函数：将纯文本URL转为带样式的可点击超链接 (方便老师/学生互相下载)
     function formatContent(text) {
-        if (!text) return '';
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        let html = text.replace(urlRegex, '<a href="$1" target="_blank" style="color:var(--accent-blue); text-decoration:underline; font-weight:bold;">$1 (点击查看/下载)</a>');
+        if (!text) return ''; const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let html = text.replace(urlRegex, '<a href="$1" target="_blank" style="color:var(--accent-blue); text-decoration:underline; font-weight:bold;">$1 (点击查阅)</a>');
         return html.replace(/\n/g, '<br>');
     }
 
-    // 微信推送引擎增强版 (带网络错误拦截和 UI 提示)
+    // 微信推送加强版代理 (带报错弹窗提示)
     async function sendWxPush(uid, message) {
-        if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) {
-            console.warn("WxPusher 缺少合法 UID，放弃推送。");
-            return;
-        }
+        if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) { console.warn("WxPusher 缺少合法 UID，跳过推送。"); return; }
+        const payload = { appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] };
         try {
-            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] })
-            });
+            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             let resJson = await res.json();
-            if(resJson.code !== 1000) { alert("⚠️ 微信推送服务返回错误：" + resJson.msg + " (可能 UID 填写错误)"); }
+            if(resJson.code !== 1000) { alert("⚠️ 微信推送返回错误：" + resJson.msg + " (可能 UID 填写有误)"); }
         } catch (e) {
-            console.error("微信推送网络请求失败:", e);
+            console.warn("直接请求 WxPusher 被浏览器拦截，正在尝试通过安全代理通道推送...");
+            try {
+                let proxyRes = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://wxpusher.zjiecode.com/api/send/message'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                let proxyJson = await proxyRes.json();
+                if(proxyJson.code !== 1000) alert("⚠️ 代理通道微信推送失败：" + proxyJson.msg);
+            } catch (err) { console.error("微信推送双通道均失败:", err); }
         }
     }
 
-    // 悬浮窗拖拽
     function makeDraggable(elmnt, handleId) {
-        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        var handle = document.getElementById(handleId);
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; var handle = document.getElementById(handleId);
         if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
         function dragMouseDown(e) { e = e || window.event; if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
         function dragTouchStart(e) { if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
@@ -724,7 +555,6 @@
         makeDraggable(document.getElementById('floating-timer-box'), 'timer-drag-handle'); makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
     };
 
-    // 强刷数据函数，彻底解决多端不同步的问题
     async function forceRefresh() {
         const btn = document.getElementById('refresh-btn'); if(btn) { btn.innerText = '刷新中...'; btn.disabled = true; }
         try {
@@ -777,8 +607,6 @@
     }
 
     function forceLogout() { currentUser = null; localStorage.removeItem('yuxing_session_v11'); document.getElementById('app-view').style.display = 'none'; document.getElementById('login-view').style.display = 'flex'; document.getElementById('login-password').value = ''; }
-    window.handleLogout = forceLogout; 
-
     function openResetPassword() { document.getElementById('reset-key').value=''; document.getElementById('reset-new-pw').value=''; document.getElementById('reset-modal').style.display='flex'; }
     function executeResetPassword() {
         const key = document.getElementById('reset-key').value.trim(), pw = document.getElementById('reset-new-pw').value.trim();
@@ -786,7 +614,6 @@
         if (key !== validKey) return alert("超级恢复密钥错误！"); if (!pw) return alert("新密码不能为空！");
         staffAccounts['admin'].password = pw; saveData(); closeModal('reset-modal'); alert("管理员密码重置成功，请登录。");
     }
-
     function getTeacherName(tUn) { return staffAccounts[tUn] ? staffAccounts[tUn].name : '未指派'; }
     
     function applyRolePermissions() {
@@ -798,33 +625,27 @@
         else if (currentUser.role === 'student') { document.querySelectorAll('.can-interact').forEach(el => el.style.display = 'inline-block'); }
     }
 
-    // ================= 消息与通知中心 =================
     function ensureNotificationsInit() {
         students.forEach(s => { if(!s.notifications) s.notifications = []; });
         for(let key in staffAccounts) { if(!staffAccounts[key].notifications) staffAccounts[key].notifications = []; }
     }
 
-    // 核心函数：学生端发出的动作，通知老师
-    function notifyTeacherByWx(tUsername, msg) {
-        let t = staffAccounts[tUsername];
-        if(t) {
-            if(!t.notifications) t.notifications = [];
-            t.notifications.unshift({ id: Date.now() + Math.random(), message: msg, time: toLocalISOString(new Date()), read: false });
-            if(t.wxUid) { sendWxPush(t.wxUid, msg.replace(/<[^>]+>/g, '')); }
-        }
-        // 管理员也能收到一份镜像
-        if(tUsername !== 'admin' && staffAccounts['admin']) {
-            staffAccounts['admin'].notifications.unshift({ id: Date.now() + Math.random(), message: `[教师 ${t?t.name:'未知'} 班级] ` + msg, time: toLocalISOString(new Date()), read: false });
-        }
-    }
-
-    // 核心函数：老师端发出的动作，通知学生
     function addNotificationToStudent(studentId, msg) {
         let s = students.find(x => x.id == studentId);
         if(s) {
-            if(!s.notifications) s.notifications = [];
             s.notifications.unshift({ id: Date.now() + Math.random(), message: msg, time: toLocalISOString(new Date()), read: false });
             if(s.wxUid) { sendWxPush(s.wxUid, msg.replace(/<[^>]+>/g, '')); }
+        }
+    }
+
+    function notifyTeacherByWx(tUsername, msg) {
+        let t = staffAccounts[tUsername];
+        if(t) {
+            t.notifications.unshift({ id: Date.now() + Math.random(), message: msg, time: toLocalISOString(new Date()), read: false });
+            if(t.wxUid) { sendWxPush(t.wxUid, msg.replace(/<[^>]+>/g, '')); }
+        }
+        if(tUsername !== 'admin' && staffAccounts['admin']) {
+            staffAccounts['admin'].notifications.unshift({ id: Date.now() + Math.random(), message: `[教师 ${t?t.name:'未知'} 班级] ` + msg, time: toLocalISOString(new Date()), read: false });
         }
     }
 
@@ -838,8 +659,7 @@
             if(t && t.notifications) { t.notifications.forEach(n => { if(!n.read) unreadCount++; }); }
         }
         const badge = document.getElementById('nav-notif-badge');
-        if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'inline-block'; } 
-        else { badge.style.display = 'none'; }
+        if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; }
     }
 
     function openNotificationsModal() {
@@ -857,7 +677,6 @@
                 });
             }
         } else {
-            // 老师端第一板块：待批改直达
             let list = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
             let hwNotifs = [];
             list.forEach(s => { (s.assignments || []).forEach(hw => { if(hw.status === 'submitted') { hwNotifs.push({ sName: s.name, cName: s.className, title: hw.title, sId: s.id, hwId: hw.id }); } }); });
@@ -865,7 +684,6 @@
             if(hwNotifs.length > 0) {
                 html += `<div style="font-size:13px; color:var(--accent-orange); margin-bottom:12px; font-weight:bold;">📋 待批改作业 (${hwNotifs.length}份) 点击一键直达：</div>`;
                 hwNotifs.forEach(n => {
-                    // 【满血修复】：点击直接弹出“批改窗口” (openGradeHw)
                     html += `<div class="item-card" style="cursor:pointer; border-left:3px solid var(--accent-orange);" onclick="closeModal('notif-modal'); openGradeHw(${n.sId}, '${n.hwId}')">
                         <div style="font-weight:600;">学生 ${n.sName} [${n.cName}]</div><div style="color:var(--text-muted); font-size:13px; margin-top:4px;">提交了作业: ${n.title}</div>
                         <div style="margin-top:8px; font-size:12px; color:var(--accent-blue);">👉 立即批改</div></div>`;
@@ -873,7 +691,6 @@
                 html += `<hr style="border:none; border-top:1px solid rgba(0,0,0,0.05); margin: 20px 0;">`;
             }
             
-            // 老师端第二板块：历史通知展示
             html += `<div style="font-size:13px; color:var(--text-muted); margin-bottom:12px; font-weight:bold;">🔔 历史通知：</div>`;
             let t = staffAccounts[currentUser.username];
             if(t && t.notifications && t.notifications.length > 0) {
@@ -888,17 +705,9 @@
         listBody.innerHTML = html; document.getElementById('notif-modal').style.display = 'flex';
     }
 
-    function markNotifRead(notifId, sId) {
-        let s = students.find(x => x.id == sId);
-        if(s) { let n = s.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } }
-    }
-    function markTeacherNotifRead(notifId) {
-        let t = staffAccounts[currentUser.username];
-        if(t && t.notifications) { let n = t.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } }
-    }
+    function markNotifRead(notifId, sId) { let s = students.find(x => x.id == sId); if(s) { let n = s.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } } }
+    function markTeacherNotifRead(notifId) { let t = staffAccounts[currentUser.username]; if(t && t.notifications) { let n = t.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } } }
 
-
-    // ================= 表格渲染引擎 =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         students.forEach(s => {
@@ -914,9 +723,7 @@
     function renderStudentTable() {
         const tbody = document.getElementById('student-list-body'); tbody.innerHTML = '';
         let list = currentUser.role === 'admin' ? students : (currentUser.role === 'teacher' ? students.filter(s => s.teacherUsername === currentUser.username) : students.filter(s => s.username === currentUser.username));
-
-        const filterSelect = document.getElementById('global-class-filter');
-        const nameSearchInput = document.getElementById('global-name-search').value.trim().toLowerCase();
+        const filterSelect = document.getElementById('global-class-filter'); const nameSearchInput = document.getElementById('global-name-search').value.trim().toLowerCase();
 
         if (currentUser.role !== 'student') {
             let myCls = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
@@ -937,19 +744,13 @@
         } else {
             let groupedMap = {};
             list.forEach(s => {
-                let key = s.username || s.id;
-                if(!groupedMap[key]) { groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 }; }
-                groupedMap[key].courses.push({ id: s.id, className: s.className || '未分配' });
-                groupedMap[key].teachers.add(getTeacherName(s.teacherUsername)); groupedMap[key].totalPts += (s.totalPoints || 0);
+                let key = s.username || s.id; if(!groupedMap[key]) { groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 }; }
+                groupedMap[key].courses.push({ id: s.id, className: s.className || '未分配' }); groupedMap[key].teachers.add(getTeacherName(s.teacherUsername)); groupedMap[key].totalPts += (s.totalPoints || 0);
             });
-
             for(let key in groupedMap) {
-                let g = groupedMap[key]; let courseBadges = g.courses.map(co => `<span class="badge class" onclick="openStudentDetailById(${co.id})" title="点击管理该课程">${co.className}</span>`).join(' ');
-                let teachersStr = [...g.teachers].join(', '); let primaryId = g.courses[0].id;
-                const tr = document.createElement('tr');
-                let actionHtml = `<div class="action-btns"><button class="btn-mini blue" onclick="openStudentDetailById(${primaryId})">管理档案</button><button class="btn-mini red" onclick="deleteStudentGroup('${key}')">移除</button></div>`;
-                tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${primaryId})">${g.name}</span></td><td><div>${courseBadges}</div></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${teachersStr}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${g.totalPts}</td><td>${actionHtml}</td>`;
-                tbody.appendChild(tr);
+                let g = groupedMap[key]; let courseBadges = g.courses.map(co => `<span class="badge class" onclick="openStudentDetailById(${co.id})" title="点击管理该课程">${co.className}</span>`).join(' '); let teachersStr = [...g.teachers].join(', '); let primaryId = g.courses[0].id;
+                const tr = document.createElement('tr'); let actionHtml = `<div class="action-btns"><button class="btn-mini blue" onclick="openStudentDetailById(${primaryId})">管理档案</button><button class="btn-mini red" onclick="deleteStudentGroup('${key}')">移除</button></div>`;
+                tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${primaryId})">${g.name}</span></td><td><div>${courseBadges}</div></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${teachersStr}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${g.totalPts}</td><td>${actionHtml}</td>`; tbody.appendChild(tr);
             }
         }
     }
@@ -959,8 +760,7 @@
         for (let un in staffAccounts) {
             let t = staffAccounts[un];
             let actionHtml = un === 'admin' ? `<span style="color:var(--text-muted); font-size:12px;">系统保留</span>` : `<div class="action-btns"><button class="btn-mini blue" onclick="openEditTeacherPw('${un}')">改密</button><button class="btn-mini red" onclick="deleteTeacher('${un}')">移除</button></div>`;
-            const tr = document.createElement('tr'); tr.innerHTML = `<td style="font-weight:600;">${t.name}</td><td style="font-size:13px; color:var(--text-muted);">${un}</td><td>${actionHtml}</td>`;
-            tbody.appendChild(tr);
+            const tr = document.createElement('tr'); tr.innerHTML = `<td style="font-weight:600;">${t.name}</td><td style="font-size:13px; color:var(--text-muted);">${un}</td><td>${actionHtml}</td>`; tbody.appendChild(tr);
         }
     }
 
@@ -968,47 +768,24 @@
     function saveTeacherPw() { let un = document.getElementById('edit-t-un').value, newPw = document.getElementById('edit-t-pw').value.trim(); if(!newPw) return alert("密码不能为空"); if(staffAccounts[un]) { staffAccounts[un].password = newPw; saveData(); closeModal('edit-teacher-pw-modal'); alert(`教师 ${staffAccounts[un].name} 的密码已修改。`); } }
     function deleteTeacher(un) { if(!confirm(`确定移除教师 ${staffAccounts[un].name} 吗？\n该教师名下的班级和学生将自动转交超级管理员接管。`)) return; classGroups.forEach(c => { if(c.teacherUsername === un) c.teacherUsername = 'admin'; }); students.forEach(s => { if(s.teacherUsername === un) s.teacherUsername = 'admin'; }); delete staffAccounts[un]; saveData(); renderTable(); }
 
-    // ================= 班级与学生录入 =================
-    function openClassManageModal() {
-        let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`;
-        document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList();
-    }
-    function createNewClass() {
-        const cName = document.getElementById('manage-new-class').value.trim(), tUn = document.getElementById('manage-assign-teacher').value, cType = document.getElementById('manage-class-type').value;
-        if(!cName) return; if(classGroups.find(c => c.name === cName)) return alert("名称已存在");
-        classGroups.push({ id: Date.now(), name: cName, teacherUsername: tUn, classType: cType }); saveData(); document.getElementById('manage-new-class').value = ''; renderClassManageList(); 
-    }
+    function openClassManageModal() { let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`; document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList(); }
+    function createNewClass() { const cName = document.getElementById('manage-new-class').value.trim(), tUn = document.getElementById('manage-assign-teacher').value, cType = document.getElementById('manage-class-type').value; if(!cName) return; if(classGroups.find(c => c.name === cName)) return alert("名称已存在"); classGroups.push({ id: Date.now(), name: cName, teacherUsername: tUn, classType: cType }); saveData(); document.getElementById('manage-new-class').value = ''; renderClassManageList(); }
     
     function renderClassManageList() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name}</option>`;
         let typeOptions = ['一对一','一对二','一对三','一对四','一对六','一对八']; let html = '';
         classGroups.forEach((c, idx) => {
             let typeOptsHtml = typeOptions.map(opt => `<option value="${opt}" ${c.classType === opt ? 'selected' : ''}>${opt}</option>`).join('');
-            html += `<div class="item-card flex-row">
-                        <input type="text" class="input-elegant" style="margin:0; flex:1; min-width:110px; font-weight:600; color:var(--accent-blue);" value="${c.name}" title="修改名称" onchange="updateClassName(${idx}, this.value, '${c.name}')">
-                        <select class="input-elegant" style="margin:0; flex:0.8; min-width:90px; margin-right:8px;" title="修改班型" onchange="updateClassType(${idx}, this.value)"><option value="" hidden>${c.classType || '未设置'}</option>${typeOptsHtml}</select>
-                        <select class="input-elegant" style="margin:0; flex:1; min-width:100px;" title="修改默认老师" onchange="updateClassTeacher(${idx}, this.value)"><option value="${c.teacherUsername}" selected hidden>${getTeacherName(c.teacherUsername)}</option>${tOpts}</select>
-                        <button class="btn-apple" style="background:var(--danger-red); width:auto;" onclick="deleteClass(${idx})">解散</button>
-                    </div>`;
+            html += `<div class="item-card flex-row"><input type="text" class="input-elegant" style="margin:0; flex:1; min-width:110px; font-weight:600; color:var(--accent-blue);" value="${c.name}" title="修改名称" onchange="updateClassName(${idx}, this.value, '${c.name}')"><select class="input-elegant" style="margin:0; flex:0.8; min-width:90px; margin-right:8px;" title="修改班型" onchange="updateClassType(${idx}, this.value)"><option value="" hidden>${c.classType || '未设置'}</option>${typeOptsHtml}</select><select class="input-elegant" style="margin:0; flex:1; min-width:100px;" title="修改默认老师" onchange="updateClassTeacher(${idx}, this.value)"><option value="${c.teacherUsername}" selected hidden>${getTeacherName(c.teacherUsername)}</option>${tOpts}</select><button class="btn-apple" style="background:var(--danger-red); width:auto;" onclick="deleteClass(${idx})">解散</button></div>`;
         });
         document.getElementById('class-list-manage').innerHTML = html || '<p style="color:var(--text-muted);">暂无班级</p>';
     }
-
-    function updateClassName(idx, newName, oldName) {
-        newName = newName.trim(); if(!newName || newName === oldName) return;
-        if(classGroups.find(c => c.name === newName)) { alert("该班级名称已被占用，请换一个名称"); renderClassManageList(); return; }
-        classGroups[idx].name = newName; students.forEach(s => { if(s.className === oldName) s.className = newName; });
-        saveData(); renderClassManageList(); renderTable(); alert("班级名称已更新，对应学生档案已自动同步！");
-    }
+    function updateClassName(idx, newName, oldName) { newName = newName.trim(); if(!newName || newName === oldName) return; if(classGroups.find(c => c.name === newName)) { alert("该班级名称已被占用，请换一个名称"); renderClassManageList(); return; } classGroups[idx].name = newName; students.forEach(s => { if(s.className === oldName) s.className = newName; }); saveData(); renderClassManageList(); renderTable(); alert("班级名称已更新，对应学生档案已自动同步！"); }
     function updateClassType(idx, newType) { classGroups[idx].classType = newType; saveData(); alert("班型已更新"); }
     function updateClassTeacher(idx, newUn) { classGroups[idx].teacherUsername = newUn; students.forEach(s => { if(s.className === classGroups[idx].name) s.teacherUsername = newUn; }); saveData(); renderTable(); alert(`已成功将班级 [${classGroups[idx].name}] 的老师更换为 ${getTeacherName(newUn)}，学生的历史记录已完整保留！`); }
     function deleteClass(idx) { if(!confirm("确定解散该班级吗？解散后原班级学生将变成'未分配'状态")) return; students.forEach(s => { if(s.className === classGroups[idx].name) s.className = ''; }); classGroups.splice(idx, 1); saveData(); renderClassManageList(); renderTable(); }
 
-    function openAddStudentModal() {
-        document.getElementById('new-class-select').innerHTML = classGroups.map(c => `<option value="${c.name}">${c.name} (${c.classType||'常规'})</option>`).join('') || '<option value="">无可用班级</option>';
-        document.getElementById('new-username').value = currentUser.role === 'teacher' ? 'stu_' + Math.floor(Math.random() * 10000) : ''; 
-        document.getElementById('new-wx-uid').value = ''; document.getElementById('add-modal').style.display = 'flex';
-    }
+    function openAddStudentModal() { document.getElementById('new-class-select').innerHTML = classGroups.map(c => `<option value="${c.name}">${c.name} (${c.classType||'常规'})</option>`).join('') || '<option value="">无可用班级</option>'; document.getElementById('new-username').value = currentUser.role === 'teacher' ? 'stu_' + Math.floor(Math.random() * 10000) : ''; document.getElementById('new-wx-uid').value = ''; document.getElementById('add-modal').style.display = 'flex'; }
     function addStudent() {
         const name = document.getElementById('new-name').value, cls = document.getElementById('new-class-select').value, rate = parseFloat(document.getElementById('new-hourly-rate').value) || 0, initPts = parseInt(document.getElementById('new-initial-points').value) || 0, un = document.getElementById('new-username').value, pw = document.getElementById('new-password').value, wxUid = document.getElementById('new-wx-uid').value.trim();
         if(!name || !un || !cls) return alert("信息不全"); if(staffAccounts[un]) return alert("账号不可与教职工冲突");
@@ -1020,35 +797,23 @@
     function deleteStudentGroup(usernameKey) { if(confirm("确定彻底移除该学生的所有课程档案吗？")) { students = students.filter(s => s.username !== usernameKey && s.id != usernameKey); saveData(); renderTable(); } }
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id == currentStudentId).teacherUsername = newUn; saveData(); renderTable(); alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`); }
 
-    // ================= 独立布置作业 =================
     function openAssignHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
-        let sel = document.getElementById('assign-hw-class-select');
-        sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('assign-hw-student-list').innerHTML = ''; 
-        document.getElementById('assign-hw-session').value = ''; document.getElementById('assign-hw-session-list').innerHTML = '';
-        document.getElementById('assign-hw-title').value = ''; document.getElementById('assign-hw-content').value = '';
-        document.getElementById('assign-hw-requires-submit').checked = true; document.getElementById('assign-hw-modal').style.display = 'flex';
+        let sel = document.getElementById('assign-hw-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('assign-hw-student-list').innerHTML = ''; document.getElementById('assign-hw-session').value = ''; document.getElementById('assign-hw-session-list').innerHTML = '';
+        document.getElementById('assign-hw-title').value = ''; document.getElementById('assign-hw-content').value = ''; document.getElementById('assign-hw-requires-submit').checked = true; document.getElementById('assign-hw-modal').style.display = 'flex';
     }
-
     function renderAssignHwStudentCheckboxes(className) {
         let stList = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="assign-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
         document.getElementById('assign-hw-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">该班级暂无学生</span>';
-
-        let sessions = new Set();
-        stList.forEach(s => { (s.attendance || []).forEach(a => { if (a.startTime) { let dateStr = a.startTime.replace('T', ' ').substring(0, 16); let contentStr = a.content ? ` - ${a.content.substring(0, 15)}` : ''; sessions.add(dateStr + contentStr); } }); });
-        let sessionArr = Array.from(sessions).sort((a,b) => b.localeCompare(a));
-        document.getElementById('assign-hw-session-list').innerHTML = sessionArr.map(opt => `<option value="${opt}">`).join('');
+        let sessions = new Set(); stList.forEach(s => { (s.attendance || []).forEach(a => { if (a.startTime) { let dateStr = a.startTime.replace('T', ' ').substring(0, 16); let contentStr = a.content ? ` - ${a.content.substring(0, 15)}` : ''; sessions.add(dateStr + contentStr); } }); });
+        let sessionArr = Array.from(sessions).sort((a,b) => b.localeCompare(a)); document.getElementById('assign-hw-session-list').innerHTML = sessionArr.map(opt => `<option value="${opt}">`).join('');
     }
-
     function executeAssignStandaloneHw() {
         const cls = document.getElementById('assign-hw-class-select').value; if(!cls) return alert("请先选择班级");
-        const session = document.getElementById('assign-hw-session').value.trim(); const hwTitle = document.getElementById('assign-hw-title').value.trim();
-        const hwContent = document.getElementById('assign-hw-content').value.trim(); const reqSubmit = document.getElementById('assign-hw-requires-submit').checked;
-        if(!hwTitle) return alert("作业题目不能为空！");
-        let cbs = document.querySelectorAll('.assign-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名学生");
-        
+        const session = document.getElementById('assign-hw-session').value.trim(); const hwTitle = document.getElementById('assign-hw-title').value.trim(); const hwContent = document.getElementById('assign-hw-content').value.trim(); const reqSubmit = document.getElementById('assign-hw-requires-submit').checked;
+        if(!hwTitle) return alert("作业题目不能为空！"); let cbs = document.querySelectorAll('.assign-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名学生");
         let actionCount = 0; let fullContent = session ? `【关联课节: ${session}】\n${hwContent}` : hwContent;
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
@@ -1062,13 +827,10 @@
         if(actionCount === 0) return; saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderTable(); 
     }
 
-    // ================= 补录打卡 =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
-        let sel = document.getElementById('pub-class-select');
-        sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('pub-student-list').innerHTML = ''; document.getElementById('pub-start').value = ''; document.getElementById('pub-end').value = '';
-        document.getElementById('pub-feedback').value = ''; document.getElementById('publish-hw-modal').style.display = 'flex';
+        let sel = document.getElementById('pub-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('pub-student-list').innerHTML = ''; document.getElementById('pub-start').value = ''; document.getElementById('pub-end').value = ''; document.getElementById('pub-feedback').value = ''; document.getElementById('publish-hw-modal').style.display = 'flex';
     }
     function renderPubStudentCheckboxes(className) {
         let stList = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
@@ -1091,39 +853,26 @@
         if(actionCount === 0) return; saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null; let activeLiveClass = ''; let activeLiveStudentIds = [];
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
     function openLiveClassSetup() {
         let sel = document.getElementById('live-class-select');
-        if (currentUser.role === 'student') {
-            let myStudents = students.filter(s => s.username === currentUser.username);
-            sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join('');
-        } else {
-            let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
-            sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join('');
-        }
+        if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join(''); } 
+        else { let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join(''); }
         document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级/课程</span>'; document.getElementById('live-setup-modal').style.display = 'flex';
     }
     function renderLiveStudentCheckboxes(targetVal) {
         if(!targetVal) return; let stList = [];
-        if(targetVal.startsWith('class_')) {
-            let clsName = targetVal.replace('class_', ''); activeLiveClass = `${clsName}`; stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
-        } else if(targetVal.startsWith('studentrecord_')) {
-            let recordId = targetVal.replace('studentrecord_', ''); let targetS = students.find(s => s.id == recordId); if(targetS) { activeLiveClass = `${targetS.name} (${targetS.className})`; stList = [targetS]; }
-        }
-        let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
-        document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
+        if(targetVal.startsWith('class_')) { let clsName = targetVal.replace('class_', ''); activeLiveClass = `${clsName}`; stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username)); } 
+        else if(targetVal.startsWith('studentrecord_')) { let recordId = targetVal.replace('studentrecord_', ''); let targetS = students.find(s => s.id == recordId); if(targetS) { activeLiveClass = `${targetS.name} (${targetS.className})`; stList = [targetS]; } }
+        let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join(''); document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
     }
     function startLiveClass() {
         let selectEl = document.getElementById('live-class-select'); let cbs = document.querySelectorAll('.live-student-cb:checked');
         if(!selectEl.value) return alert("请先选择班级或课程！"); if(cbs.length === 0) return alert("请至少确认一名考勤学生");
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value); closeModal('live-setup-modal'); 
-        liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval);
-        liveInterval = setInterval(() => { liveSeconds++; document.getElementById('float-timer-display').innerText = formatTime(liveSeconds); }, 1000);
-        document.getElementById('float-title').innerText = `🔴 ${activeLiveClass} 上课中`;
-        document.getElementById('float-btn-toggle').innerText = '⏸️ 暂停'; document.getElementById('float-btn-toggle').className = 'btn-apple btn-orange';
-        document.getElementById('floating-timer-box').style.display = 'block';
+        liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval); liveInterval = setInterval(() => { liveSeconds++; document.getElementById('float-timer-display').innerText = formatTime(liveSeconds); }, 1000);
+        document.getElementById('float-title').innerText = `🔴 ${activeLiveClass} 上课中`; document.getElementById('float-btn-toggle').innerText = '⏸️ 暂停'; document.getElementById('float-btn-toggle').className = 'btn-apple btn-orange'; document.getElementById('floating-timer-box').style.display = 'block';
     }
     function toggleLiveTimer() {
         let btn = document.getElementById('float-btn-toggle');
@@ -1144,14 +893,10 @@
         saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 互动加分悬浮窗 =================
     function openClassSelectModal() {
         let html = '';
-        if (currentUser.role === 'student') {
-            let myStudents = students.filter(s => s.username === currentUser.username); html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`; html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join('');
-        } else {
-            let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); let optHtml = `<option value="" hidden>第一步：先选择一个班级</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join(''); html += `<select class="input-elegant" style="margin-bottom:16px;" onchange="renderClassroomIntOptions(this.value)">${optHtml}</select><div id="classroom-int-options"></div>`;
-        }
+        if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`; html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join(''); } 
+        else { let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); let optHtml = `<option value="" hidden>第一步：先选择一个班级</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join(''); html += `<select class="input-elegant" style="margin-bottom:16px;" onchange="renderClassroomIntOptions(this.value)">${optHtml}</select><div id="classroom-int-options"></div>`; }
         document.getElementById('class-list-body').innerHTML = html; document.getElementById('class-select-modal').style.display = 'flex';
     }
     function renderClassroomIntOptions(className) {
@@ -1176,7 +921,7 @@
     function openSubmitHw(studentId, hwId) {
         let s = students.find(x => x.id == studentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId); if(!hw) return;
         document.getElementById('submit-hw-id').value = hwId; document.getElementById('submit-hw-title-disp').innerText = `作业题目: ${hw.title}`;
-        document.getElementById('submit-hw-req-disp').innerText = hw.content ? `要求: ${hw.content}` : '无具体要求';
+        document.getElementById('submit-hw-req-disp').innerHTML = hw.content ? `要求: <br>${formatContent(hw.content)}` : '无具体要求';
         document.getElementById('submit-hw-text').value = hw.submitContent || ''; document.getElementById('submit-hw-modal').style.display = 'flex';
     }
     function executeSubmitHw() {
@@ -1185,24 +930,27 @@
         let s = students.find(x => x.id == currentStudentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId);
         hw.submitContent = submitText; hw.status = 'submitted'; hw.accuracy = "等待老师批改"; hw.comment = "未评价";
         notifyTeacherByWx(s.teacherUsername, `学生 ${s.name} 刚刚提交了作业 [${hw.title}]，请登录系统查看。`);
-        saveData(); closeModal('submit-hw-modal'); alert("作业提交成功！已通知老师批改。"); renderStudentDetails();
+        saveData(); closeModal('submit-hw-modal'); alert("作业提交成功！已通知老师。"); renderStudentDetails();
     }
-    function openGradeHw(studentId, hwId) {
-        currentStudentId = studentId; // Ensure context is correct when clicking from notification
+    
+    // 打开批改窗口 (可从通知中心一键直达)
+    window.openGradeHw = function(studentId, hwId) {
+        currentStudentId = studentId; 
         let s = students.find(x => x.id == studentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId); if(!hw) return;
         document.getElementById('grade-hw-id').value = hwId; document.getElementById('grade-hw-title-disp').innerText = `作业题目: ${hw.title}`;
         document.getElementById('grade-hw-content-disp').innerHTML = hw.submitContent ? formatContent(hw.submitContent) : '无内容 (线下提交)';
         document.getElementById('grade-accuracy').value = hw.accuracy === "等待老师批改" ? "" : (hw.accuracy === "无需线上提交" ? "" : hw.accuracy);
         document.getElementById('grade-points').value = ''; document.getElementById('grade-comment').value = '';
         document.getElementById('grade-hw-modal').style.display = 'flex';
-    }
+    };
+
     function executeGradeHw() {
         let hwId = document.getElementById('grade-hw-id').value; let accuracy = document.getElementById('grade-accuracy').value.trim() || '合格';
         let points = parseInt(document.getElementById('grade-points').value) || 0; let comment = document.getElementById('grade-comment').value.trim() || '很棒，继续保持！';
         let s = students.find(x => x.id == currentStudentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId);
         hw.accuracy = accuracy; hw.points = points; hw.comment = comment; hw.status = 'graded'; s.totalPoints = (s.totalPoints || 0) + points;
         addNotificationToStudent(s.id, `老师已批改了你的作业 <b>${hw.title}</b>。得分：${accuracy}，评价：${comment}`);
-        saveData(); closeModal('grade-hw-modal'); alert("批改完成！已发放积分并通知学生。"); 
+        saveData(); closeModal('grade-hw-modal'); alert("批改完成！"); 
         if (document.getElementById('detail-modal').style.display === 'flex') { renderStudentDetails(); }
     }
     function executeReturnHw() {
@@ -1212,7 +960,7 @@
         if(!hw.submitHistory) hw.submitHistory = []; hw.submitHistory.push({ content: hw.submitContent || '线下提交/无内容', returnComment: comment, time: toLocalISOString(new Date()) });
         hw.submitContent = ''; hw.status = 'returned'; hw.accuracy = '被打回重做'; hw.comment = comment;
         addNotificationToStudent(s.id, `⚠️ 你的作业 <b>${hw.title}</b> 被老师打回重做了。老师留言：${comment}`);
-        saveData(); closeModal('grade-hw-modal'); alert("作业已打回！已通知学生重做。"); 
+        saveData(); closeModal('grade-hw-modal'); alert("作业已打回！"); 
         if (document.getElementById('detail-modal').style.display === 'flex') { renderStudentDetails(); }
     }
 
@@ -1232,10 +980,7 @@
 
         if(stList.length > 1) {
             html += `<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">`;
-            stList.forEach(item => {
-                let activeStyle = item.id == s.id ? 'background:var(--accent-blue); color:#fff;' : 'background:rgba(0,0,0,0.05); color:var(--text-main);';
-                html += `<button class="btn-apple" style="width:auto; padding:6px 12px; font-size:12px; ${activeStyle}" onclick="openStudentDetailById(${item.id})">${item.className || '未命名课程'}</button>`;
-            }); html += `</div>`;
+            stList.forEach(item => { let activeStyle = item.id == s.id ? 'background:var(--accent-blue); color:#fff;' : 'background:rgba(0,0,0,0.05); color:var(--text-main);'; html += `<button class="btn-apple" style="width:auto; padding:6px 12px; font-size:12px; ${activeStyle}" onclick="openStudentDetailById(${item.id})">${item.className || '未命名课程'}</button>`; }); html += `</div>`;
         }
 
         if (isAdmin) {
@@ -1265,7 +1010,7 @@
             if(!hw.status) hw.status = (hw.accuracy === "待批改" ? "pending" : "graded");
             if(hw.requiresSubmit === undefined) hw.requiresSubmit = true; 
 
-            let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">作业要求: ${formatContent(hw.content)}</div>` : '';
+            let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">作业要求:<br>${formatContent(hw.content)}</div>` : '';
             let statusBadge = ''; let actionBtn = '';
             
             if (hw.status === 'pending') {
@@ -1294,7 +1039,7 @@
             let historySec = '';
             if(hw.submitHistory && hw.submitHistory.length > 0) {
                 historySec += `<div style="margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:8px;"><div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">▼ 历史打回记录 (${hw.submitHistory.length}次)</div>`;
-                hw.submitHistory.forEach(h => { historySec += `<div style="font-size:12px; background:rgba(255,59,48,0.05); padding:6px; border-radius:6px; margin-bottom:4px; color:var(--danger-red);"><div><b>原提交:</b> <span style="color:var(--text-muted);">${formatContent(h.content)}</span></div><div style="margin-top:2px;"><b>打回原因:</b> ${h.returnComment}</div></div>`; });
+                hw.submitHistory.forEach(h => { historySec += `<div style="font-size:12px; background:rgba(255,59,48,0.05); padding:6px; border-radius:6px; margin-bottom:4px; color:var(--danger-red);"><div><b>原提交:</b> <span style="color:var(--text-muted);">${formatContent(h.content)}</span></div><div style="margin-top:2px;"><b>打回原因:</b> ${formatContent(h.returnComment)}</div></div>`; });
                 historySec += `</div>`;
             }
 
@@ -1327,7 +1072,6 @@
         let opts = `<option value="" hidden>请选择目标班级...</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         document.getElementById('transfer-target-class').innerHTML = opts; document.getElementById('transfer-modal').style.display = 'flex';
     }
-
     function executeTransferClass() {
         let targetClassName = document.getElementById('transfer-target-class').value; let keepRecords = document.getElementById('transfer-keep-records').checked;
         if(!targetClassName) return alert("请先选择目标班级！"); let s = students.find(x => x.id == transferTargetStudentId);
@@ -1357,7 +1101,6 @@
         if (currentUser.role === 'admin') { adminSec.style.display = 'block'; document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026'; } else { adminSec.style.display = 'none'; }
         document.getElementById('account-modal').style.display = 'flex'; 
     }
-
     function changeAccount() {
         const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim(), wxUid = document.getElementById('setting-wx-uid').value.trim();
         if(!u || !p) return alert("用户名和新密码不能为空");
