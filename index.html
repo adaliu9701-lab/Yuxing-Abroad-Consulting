@@ -374,6 +374,7 @@
             <input type="text" id="new-teacher-name" class="input-elegant" placeholder="教师真实姓名 (如: 王老师)">
             <input type="text" id="new-teacher-username" class="input-elegant" placeholder="登录账号 (Username)">
             <input type="text" id="new-teacher-password" class="input-elegant" value="123456" placeholder="初始密码">
+            <input type="text" id="new-teacher-wx" class="input-elegant" placeholder="绑定微信推送UID (选填，UID_开头)">
             <button class="btn-apple btn-green" onclick="addTeacher()">确认创建</button>
         </div>
     </div>
@@ -403,6 +404,11 @@
             <input type="text" id="setting-username" class="input-elegant" placeholder="新用户名">
             <input type="password" id="setting-password" class="input-elegant" placeholder="新密码">
             
+            <div style="margin-top:8px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
+                <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
+            </div>
+
             <div id="admin-recovery-section" style="display:none; margin-top:8px;">
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥 (用于忘密找回)</div>
                 <input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥">
@@ -433,6 +439,10 @@
                 <input type="text" id="new-username" class="input-elegant" placeholder="账号名">
                 <input type="text" id="new-password" class="input-elegant" value="111111">
             </div>
+            
+            <!-- 新增：创建时即可绑定微信通知 -->
+            <input type="text" id="new-wx-uid" class="input-elegant" placeholder="绑定微信推送UID (选填，以 UID_ 开头)">
+            
             <button class="btn-apple" onclick="addStudent()">完成录入</button>
         </div>
     </div>
@@ -531,7 +541,6 @@
                 <span style="font-size:12px; color:var(--text-muted);" id="submit-hw-req-disp"></span>
             </div>
 
-            <!-- 拟真UI：点击后弹窗提示 -->
             <div style="display:flex; gap:12px; justify-content:center; margin-bottom:20px;">
                 <div class="upload-icon-btn" onclick="alert('为保证系统流畅，云端版当前不支持直接上传大文件。\\n👉 请将照片、文件或录音上传至【百度网盘】或【腾讯文档】，并将共享链接粘贴在下方的输入框中提交！')">
                     <i>📷</i><span>拍照上传</span>
@@ -592,17 +601,39 @@
 </div>
 
 <script>
-    // ================= 云端数据库配置 =================
+    // ================= 云端配置区 =================
     const BIN_ID = '6a918b46da38895dfe1c493f'; 
     const API_KEY = "$2a$10$fcJHZXRJVwHg0KkR0HtA../qbddedOMz/RycWGOgxXSD3ydbgjGeG"; 
     const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+    
+    // 【微信推送】这里已经为你替换好了真实的 AppToken！
+    const WXPUSHER_APP_TOKEN = "AT_ZWGasaweZn5UX1BWa9gy8JhIIRKfJE8D";
 
     let staffAccounts = { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员', recoveryKey: 'YUXING2026' } };
     let students = [];
     let classGroups = [];
-    
     let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
+
+    // ================= 微信推送调用函数 =================
+    async function sendWxPush(uid, message) {
+        if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
+        try {
+            await fetch('https://wxpusher.zjiecode.com/api/send/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    appToken: WXPUSHER_APP_TOKEN,
+                    content: message,
+                    summary: message.substring(0, 20) + '...',
+                    contentType: 1, // 1表示文字
+                    uids: [uid]
+                })
+            });
+        } catch (e) {
+            console.error("微信推送失败:", e);
+        }
+    }
 
     // ================= 悬浮窗拖拽功能 =================
     function makeDraggable(elmnt, handleId) {
@@ -701,7 +732,7 @@
             if(statusEl) { statusEl.innerText = '☁️ 云端已同步'; setTimeout(() => statusEl.classList.remove('show'), 2000); }
             if(document.getElementById('finance-modal').style.display === 'flex') { openFinanceDashboard(); }
             if(currentUser && currentUser.role === 'admin') { renderAdminDashboard(); }
-            updateBadge(); // 保存完刷新一下红点
+            updateBadge(); 
         }).catch(err => {
             console.error(err);
             if(statusEl) { statusEl.innerText = '⚠️ 同步失败，已存本地'; setTimeout(() => statusEl.classList.remove('show'), 3000); }
@@ -761,7 +792,6 @@
 
     function getTeacherName(tUn) { return staffAccounts[tUn] ? staffAccounts[tUn].name : '未指派'; }
     
-    // ================= 权限控制 =================
     function applyRolePermissions() {
         document.querySelectorAll('.admin-only, .manage-only, .can-interact').forEach(el => el.style.display = 'none');
         if (currentUser.role === 'admin') { 
@@ -775,47 +805,47 @@
     }
 
     // ================= 消息与通知中心 =================
-    // 自动为老数据初始化 notifications 数组
     function ensureNotificationsInit() {
         students.forEach(s => { if(!s.notifications) s.notifications = []; });
     }
 
-    // 添加通知辅助函数
+    // 封装推送逻辑，一举两得（站内+微信）
     function addNotificationToStudent(studentId, msg) {
         let s = students.find(x => x.id == studentId);
         if(s) {
             if(!s.notifications) s.notifications = [];
             s.notifications.unshift({ id: Date.now() + Math.random(), message: msg, time: toLocalISOString(new Date()), read: false });
+            
+            // 如果学生绑定了微信，自动推送 (去除粗体等HTML标签)
+            if(s.wxUid) {
+                sendWxPush(s.wxUid, msg.replace(/<[^>]+>/g, ''));
+            }
         }
     }
 
-    // 更新头部铃铛红点
+    // 单独给老师推微信的函数
+    function notifyTeacherByWx(tUsername, msg) {
+        let t = staffAccounts[tUsername];
+        if(t && t.wxUid) {
+            sendWxPush(t.wxUid, msg);
+        }
+    }
+
     function updateBadge() {
         ensureNotificationsInit();
         let unreadCount = 0;
         
         if (currentUser.role === 'student') {
             let mySts = students.filter(s => s.username === currentUser.username);
-            mySts.forEach(s => {
-                s.notifications.forEach(n => { if(!n.read) unreadCount++; });
-            });
+            mySts.forEach(s => { s.notifications.forEach(n => { if(!n.read) unreadCount++; }); });
         } else {
-            // 老师和管理员：统计有多少作业是 "submitted" (待批改) 状态的
             let list = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
-            list.forEach(s => {
-                (s.assignments || []).forEach(hw => {
-                    if(hw.status === 'submitted') unreadCount++;
-                });
-            });
+            list.forEach(s => { (s.assignments || []).forEach(hw => { if(hw.status === 'submitted') unreadCount++; }); });
         }
 
         const badge = document.getElementById('nav-notif-badge');
-        if(unreadCount > 0) {
-            badge.innerText = unreadCount;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
-        }
+        if(unreadCount > 0) { badge.innerText = unreadCount; badge.style.display = 'inline-block'; } 
+        else { badge.style.display = 'none'; }
     }
 
     function openNotificationsModal() {
@@ -826,14 +856,11 @@
         if (currentUser.role === 'student') {
             let mySts = students.filter(s => s.username === currentUser.username);
             let allNotifs = [];
-            mySts.forEach(s => {
-                s.notifications.forEach(n => { allNotifs.push({...n, course: s.className, sId: s.id}); });
-            });
+            mySts.forEach(s => { s.notifications.forEach(n => { allNotifs.push({...n, course: s.className, sId: s.id}); }); });
             allNotifs.sort((a,b) => new Date(b.time) - new Date(a.time));
 
-            if(allNotifs.length === 0) {
-                html = '<p style="color:var(--text-muted); text-align:center;">暂无通知</p>';
-            } else {
+            if(allNotifs.length === 0) { html = '<p style="color:var(--text-muted); text-align:center;">暂无通知</p>'; } 
+            else {
                 allNotifs.forEach(n => {
                     let dot = n.read ? '' : '<span style="color:var(--danger-red); font-size:18px; margin-right:4px;">•</span>';
                     html += `<div class="item-card" style="cursor:pointer;" onclick="markNotifRead('${n.id}', ${n.sId})">
@@ -843,20 +870,16 @@
                 });
             }
         } else {
-            // 老师端通知展示待批改列表
             let list = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
             let hwNotifs = [];
             list.forEach(s => {
                 (s.assignments || []).forEach(hw => {
-                    if(hw.status === 'submitted') {
-                        hwNotifs.push({ sName: s.name, cName: s.className, title: hw.title, sId: s.id });
-                    }
+                    if(hw.status === 'submitted') { hwNotifs.push({ sName: s.name, cName: s.className, title: hw.title, sId: s.id }); }
                 });
             });
             
-            if(hwNotifs.length === 0) {
-                html = '<p style="color:var(--text-muted); text-align:center;">暂无待处理通知</p>';
-            } else {
+            if(hwNotifs.length === 0) { html = '<p style="color:var(--text-muted); text-align:center;">暂无待处理通知</p>'; } 
+            else {
                 html += `<div style="font-size:13px; color:var(--accent-orange); margin-bottom:12px;">你有 ${hwNotifs.length} 份学生作业待批改：</div>`;
                 hwNotifs.forEach(n => {
                     html += `<div class="item-card" style="cursor:pointer;" onclick="closeModal('notif-modal'); openStudentDetailById(${n.sId})">
@@ -874,10 +897,7 @@
 
     function markNotifRead(notifId, sId) {
         let s = students.find(x => x.id === sId);
-        if(s) {
-            let n = s.notifications.find(x => x.id == notifId);
-            if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); }
-        }
+        if(s) { let n = s.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } }
     }
 
 
@@ -916,16 +936,11 @@
             let currentFilter = filterSelect.value;
             let fOpts = '<option value="">全班级 / 显示全部</option>';
             myCls.forEach(c => { fOpts += `<option value="${c.name}" ${currentFilter === c.name ? 'selected' : ''}>${c.name}</option>`; });
-            filterSelect.innerHTML = fOpts;
-            filterSelect.style.display = 'inline-block';
+            filterSelect.innerHTML = fOpts; filterSelect.style.display = 'inline-block';
             if (currentFilter) { list = list.filter(s => s.className === currentFilter); }
-        } else {
-            filterSelect.style.display = 'none';
-        }
+        } else { filterSelect.style.display = 'none'; }
 
-        if (nameSearchInput) {
-            list = list.filter(s => s.name.toLowerCase().includes(nameSearchInput));
-        }
+        if (nameSearchInput) { list = list.filter(s => s.name.toLowerCase().includes(nameSearchInput)); }
 
         if (currentUser.role === 'student') {
             list.forEach(s => {
@@ -1013,45 +1028,39 @@
     }
 
     function updateClassName(idx, newName, oldName) {
-        newName = newName.trim();
-        if(!newName || newName === oldName) return;
+        newName = newName.trim(); if(!newName || newName === oldName) return;
         if(classGroups.find(c => c.name === newName)) { alert("该班级名称已被占用，请换一个名称"); renderClassManageList(); return; }
-        
-        classGroups[idx].name = newName;
-        students.forEach(s => { if(s.className === oldName) s.className = newName; });
+        classGroups[idx].name = newName; students.forEach(s => { if(s.className === oldName) s.className = newName; });
         saveData(); renderClassManageList(); renderTable(); alert("班级名称已更新，对应学生档案已自动同步！");
     }
 
     function updateClassType(idx, newType) { classGroups[idx].classType = newType; saveData(); alert("班型已更新"); }
     function updateClassTeacher(idx, newUn) { 
-        classGroups[idx].teacherUsername = newUn; 
-        students.forEach(s => { if(s.className === classGroups[idx].name) s.teacherUsername = newUn; }); 
+        classGroups[idx].teacherUsername = newUn; students.forEach(s => { if(s.className === classGroups[idx].name) s.teacherUsername = newUn; }); 
         saveData(); renderTable(); alert(`已成功将班级 [${classGroups[idx].name}] 的老师更换为 ${getTeacherName(newUn)}，学生的历史记录已完整保留！`); 
     }
     function deleteClass(idx) { if(!confirm("确定解散该班级吗？解散后原班级学生将变成'未分配'状态")) return; students.forEach(s => { if(s.className === classGroups[idx].name) s.className = ''; }); classGroups.splice(idx, 1); saveData(); renderClassManageList(); renderTable(); }
 
     function openAddStudentModal() {
         document.getElementById('new-class-select').innerHTML = classGroups.map(c => `<option value="${c.name}">${c.name} (${c.classType||'常规'})</option>`).join('') || '<option value="">无可用班级</option>';
-        document.getElementById('new-username').value = currentUser.role === 'teacher' ? 'stu_' + Math.floor(Math.random() * 10000) : ''; document.getElementById('add-modal').style.display = 'flex';
+        document.getElementById('new-username').value = currentUser.role === 'teacher' ? 'stu_' + Math.floor(Math.random() * 10000) : ''; 
+        document.getElementById('new-wx-uid').value = '';
+        document.getElementById('add-modal').style.display = 'flex';
     }
     function addStudent() {
-        const name = document.getElementById('new-name').value, cls = document.getElementById('new-class-select').value, rate = parseFloat(document.getElementById('new-hourly-rate').value) || 0, initPts = parseInt(document.getElementById('new-initial-points').value) || 0, un = document.getElementById('new-username').value, pw = document.getElementById('new-password').value;
+        const name = document.getElementById('new-name').value, cls = document.getElementById('new-class-select').value, rate = parseFloat(document.getElementById('new-hourly-rate').value) || 0, initPts = parseInt(document.getElementById('new-initial-points').value) || 0, un = document.getElementById('new-username').value, pw = document.getElementById('new-password').value, wxUid = document.getElementById('new-wx-uid').value.trim();
         if(!name || !un || !cls) return alert("信息不全"); if(staffAccounts[un]) return alert("账号不可与教职工冲突");
         let exUser = students.find(s => s.username === un); if (exUser && exUser.password !== pw) return alert("报多门课密码须一致！");
         let targetCls = classGroups.find(c => c.name === cls); let assignTeacher = targetCls ? targetCls.teacherUsername : currentUser.username;
-        students.push({ id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate, teacherUsername: assignTeacher, totalPoints: initPts, attendance: [], assignments: [], bills: [], notifications: [] });
+        students.push({ id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate, teacherUsername: assignTeacher, totalPoints: initPts, attendance: [], assignments: [], bills: [], notifications: [], wxUid: wxUid });
         saveData(); closeModal('add-modal'); renderTable(); alert("学生及课程添加成功！");
     }
     function deleteStudentGroup(usernameKey) {
-        if(confirm("确定彻底移除该学生的所有课程档案吗？")) {
-            students = students.filter(s => s.username !== usernameKey && s.id != usernameKey);
-            saveData(); renderTable();
-        }
+        if(confirm("确定彻底移除该学生的所有课程档案吗？")) { students = students.filter(s => s.username !== usernameKey && s.id != usernameKey); saveData(); renderTable(); }
     }
     
     window.updateIndividualTeacher = function(newUn) { 
-        students.find(x => x.id === currentStudentId).teacherUsername = newUn; 
-        saveData(); renderTable();
+        students.find(x => x.id === currentStudentId).teacherUsername = newUn; saveData(); renderTable();
         alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`);
     }
 
@@ -1085,7 +1094,6 @@
                 else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
                 
                 if(hwTitle) {
-                    // 初始化包含 status 字段的新作业结构
                     let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
                     s.assignments.unshift({ 
                         id: newHwId, title: hwTitle, content: hwContent, 
@@ -1259,16 +1267,14 @@
     // ================= 作业提交与批改逻辑 =================
     function openSubmitHw(studentId, hwId) {
         let s = students.find(x => x.id === studentId);
-        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId); // 兼容老数据用 title
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId); 
         if(!hw) return;
 
         document.getElementById('submit-hw-id').value = hwId;
         document.getElementById('submit-hw-title-disp').innerText = `作业题目: ${hw.title}`;
         document.getElementById('submit-hw-req-disp').innerText = hw.content ? `要求: ${hw.content}` : '无具体要求';
         
-        // 保留上次输入的草稿（如果有）
         document.getElementById('submit-hw-text').value = hw.submitContent || '';
-        
         document.getElementById('submit-hw-modal').style.display = 'flex';
     }
 
@@ -1281,9 +1287,12 @@
         let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
         
         hw.submitContent = submitText;
-        hw.status = 'submitted'; // 状态变为已提交，等待批改
+        hw.status = 'submitted'; 
         hw.accuracy = "等待老师批改";
         hw.comment = "未评价";
+
+        // 通知老师
+        notifyTeacherByWx(s.teacherUsername, `学生 ${s.name} 刚刚提交了作业 [${hw.title}]，请及时登录系统批改。`);
 
         saveData(); closeModal('submit-hw-modal'); 
         alert("作业提交成功！已通知老师批改。");
@@ -1333,11 +1342,10 @@
         let s = students.find(x => x.id === currentStudentId);
         let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
 
-        // 记录被打回的历史
         if(!hw.submitHistory) hw.submitHistory = [];
         hw.submitHistory.push({ content: hw.submitContent, returnComment: comment, time: toLocalISOString(new Date()) });
 
-        hw.submitContent = ''; // 清空内容让学生重填
+        hw.submitContent = ''; 
         hw.status = 'returned';
         hw.accuracy = '被打回重做';
         hw.comment = comment;
@@ -1346,7 +1354,7 @@
         saveData(); closeModal('grade-hw-modal'); alert("作业已打回！已通知学生重做。"); renderStudentDetails();
     }
 
-    // ================= 档案详情、转班与展示 =================
+    // ================= 档案详情、展示 =================
     let transferTargetStudentId = null;
 
     function openStudentDetailById(id) {
@@ -1410,14 +1418,11 @@
 
         html += `<div class="section-title">📌 课后作业与评价闭环</div>`;
         s.assignments.forEach((hw, idx) => {
-            // 兼容老数据缺少 ID 或 status
             let safeHwId = hw.id || hw.title; 
             if(!hw.status) hw.status = (hw.accuracy === "待批改" ? "pending" : "graded");
 
             let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">作业要求: ${hw.content}</div>` : '';
-            
-            let statusBadge = '';
-            let actionBtn = '';
+            let statusBadge = ''; let actionBtn = '';
             
             if (hw.status === 'pending') {
                 statusBadge = `<span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main);">待提交</span>`;
@@ -1436,15 +1441,13 @@
             let commentSec = hw.comment && hw.comment !== "未评价" ? `<div style="margin-top:6px; font-size:13px; color:var(--accent-orange);">👨‍🏫 老师反馈: ${hw.comment}</div>` : '';
             let mySubmitSec = hw.submitContent ? `<div style="margin-top:6px; font-size:13px; color:var(--text-muted); background:#f9f9fb; padding:6px; border-radius:6px; word-break:break-all;"><b>我的提交:</b> ${hw.submitContent}</div>` : '';
             
-            // 渲染历史打回记录
             let historySec = '';
             if(hw.submitHistory && hw.submitHistory.length > 0) {
                 historySec += `<div style="margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:8px;">`;
                 historySec += `<div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">▼ 历史打回记录 (${hw.submitHistory.length}次)</div>`;
                 hw.submitHistory.forEach(h => {
                     historySec += `<div style="font-size:12px; background:rgba(255,59,48,0.05); padding:6px; border-radius:6px; margin-bottom:4px; color:var(--danger-red);">
-                        <div><b>原提交:</b> <span style="color:var(--text-muted);">${h.content}</span></div>
-                        <div style="margin-top:2px;"><b>打回原因:</b> ${h.returnComment}</div>
+                        <div><b>原提交:</b> <span style="color:var(--text-muted);">${h.content}</span></div><div style="margin-top:2px;"><b>打回原因:</b> ${h.returnComment}</div>
                     </div>`;
                 });
                 historySec += `</div>`;
@@ -1454,13 +1457,7 @@
 
             html += `<div class="item-card" style="padding-bottom: ${isManager ? '40px' : '16px'};">
                 <strong style="font-size:15px; display:inline-block; margin-bottom:6px;">📖 ${hw.title}</strong>
-                ${statusBadge}
-                ${hwReq}
-                ${mySubmitSec}
-                ${commentSec}
-                ${historySec}
-                ${actionBtn}
-                ${delBtn}
+                ${statusBadge} ${hwReq} ${mySubmitSec} ${commentSec} ${historySec} ${actionBtn} ${delBtn}
             </div>`;
         });
         if(s.assignments.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无作业记录</p>`;
@@ -1487,10 +1484,8 @@
     }
 
     function executeTransferClass() {
-        let targetClassName = document.getElementById('transfer-target-class').value;
-        let keepRecords = document.getElementById('transfer-keep-records').checked;
-        if(!targetClassName) return alert("请先选择目标班级！");
-        let s = students.find(x => x.id === transferTargetStudentId);
+        let targetClassName = document.getElementById('transfer-target-class').value; let keepRecords = document.getElementById('transfer-keep-records').checked;
+        if(!targetClassName) return alert("请先选择目标班级！"); let s = students.find(x => x.id === transferTargetStudentId);
         if(s.className === targetClassName) return alert("学生当前已经在该班级，无需转移。");
         let targetClass = classGroups.find(c => c.name === targetClassName); if(!targetClass) return;
         s.className = targetClassName; s.teacherUsername = targetClass.teacherUsername; 
@@ -1506,27 +1501,55 @@
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id === currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
 
     function openAddTeacherModal() { document.getElementById('new-teacher-name').value = ''; document.getElementById('new-teacher-username').value = ''; document.getElementById('add-teacher-modal').style.display = 'flex'; }
-    function addTeacher() { const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim(); if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在"); staffAccounts[un] = { role: 'teacher', name, password: pw }; saveData(); renderTable(); closeModal('add-teacher-modal'); alert("添加成功"); }
+    function addTeacher() { const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim(); const wxUid = document.getElementById('new-teacher-wx').value.trim(); if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在"); staffAccounts[un] = { role: 'teacher', name, password: pw, wxUid: wxUid }; saveData(); renderTable(); closeModal('add-teacher-modal'); alert("添加成功"); }
     
-    // === 账号与超级密钥修改 ===
+    // === 账号与超级密钥、微信UID修改 ===
     function openAccountModal() { 
         document.getElementById('setting-username').value = currentUser.username; document.getElementById('setting-password').value = ''; 
+        
+        let wxUidField = document.getElementById('setting-wx-uid');
+        if (currentUser.role === 'student') {
+            let s = students.find(x => x.username === currentUser.username);
+            wxUidField.value = s ? (s.wxUid || '') : '';
+        } else {
+            wxUidField.value = staffAccounts[currentUser.username].wxUid || '';
+        }
+
         let adminSec = document.getElementById('admin-recovery-section');
         if (currentUser.role === 'admin') { adminSec.style.display = 'block'; document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026'; } else { adminSec.style.display = 'none'; }
         document.getElementById('account-modal').style.display = 'flex'; 
     }
+
     function changeAccount() {
-        const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim();
+        const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim(), wxUid = document.getElementById('setting-wx-uid').value.trim();
         if(!u || !p) return alert("用户名和新密码不能为空");
-        if (currentUser.role === 'student') { students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; } }); } 
+        if (currentUser.role === 'student') { 
+            students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; s.wxUid = wxUid; } }); 
+        } 
         else { 
-            let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; 
+            let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; staffAccounts[u].wxUid = wxUid;
             if(staffAccounts[u].role === 'admin') { const recKey = document.getElementById('setting-recovery-key').value.trim(); if(recKey) staffAccounts[u].recoveryKey = recKey; }
         }
         currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功，修改已同步。");
     }
 
     function toLocalISOString(date) { const pad = n => n < 10 ? '0' + n : n; return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()); }
+    
+    function openFinanceDashboard() {
+        document.getElementById('finance-modal').style.display = 'flex'; 
+        let studentData = {};
+        students.forEach(s => {
+            let sTotal = 0; 
+            (s.attendance || []).forEach(a => {
+                if(a.endTime && a.startTime) { let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000; if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0); }
+            });
+            if (sTotal > 0) { studentData[s.name] = (studentData[s.name] || 0) + sTotal; }
+        });
+        if(chartMonthly) chartMonthly.destroy();
+        chartMonthly = new Chart(document.getElementById('chart-monthly'), { type: 'bar', data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
+        if(chartStudents) chartStudents.destroy();
+        chartStudents = new Chart(document.getElementById('chart-students'), { type: 'doughnut', data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } });
+    }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBadge(); }
 </script>
 </body>
