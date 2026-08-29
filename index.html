@@ -153,6 +153,20 @@
         .admin-only, .manage-only, .can-interact { display: none; }
         #cloud-status { font-size: 13px; color: var(--accent-blue); font-weight: 500; opacity: 0; transition: opacity 0.3s; }
         #cloud-status.show { opacity: 1; }
+
+        /* 通知红点 */
+        .notif-badge {
+            background: var(--danger-red); color: white; border-radius: 10px; padding: 2px 6px; font-size: 10px; font-weight: bold;
+            position: absolute; top: -5px; right: -5px; display: none;
+        }
+
+        /* 模拟上传图标按钮 */
+        .upload-icon-btn {
+            background: rgba(0,113,227,0.05); border: 1px dashed var(--accent-blue); color: var(--accent-blue);
+            padding: 10px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: 0.2s;
+        }
+        .upload-icon-btn:hover { background: rgba(0,113,227,0.1); }
+        .upload-icon-btn i { font-size: 20px; }
     </style>
 </head>
 <body>
@@ -182,6 +196,11 @@
             </div>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+            <!-- 通知中心按钮 -->
+            <button class="btn-apple btn-secondary" style="width: auto; position:relative;" onclick="openNotificationsModal()">
+                🔔 通知中心 <span id="nav-notif-badge" class="notif-badge">0</span>
+            </button>
+
             <button class="btn-apple admin-only" style="background:#000; width: auto;" onclick="openFinanceDashboard()">📊 财务大屏</button>
             <button class="btn-apple btn-secondary admin-only" style="width: auto;" onclick="openClassManageModal()">📂 班级管理</button>
             
@@ -213,7 +232,6 @@
         <div class="left-col">
             <div class="section-title" style="margin-top:0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:10px;">
                 <span>👨‍🎓 学生档案与记录</span>
-                <!-- 双重交叉搜索栏：班级下拉 + 姓名搜索 -->
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <select id="global-class-filter" class="input-elegant manage-only" style="width:auto; margin:0; padding:6px 12px; font-size:12px; height:auto; display:none;" onchange="renderTable()">
                         <option value="">全班级 / 显示全部</option>
@@ -283,6 +301,18 @@
 
 <!-- ================= 模态框区 ================= -->
 
+<div class="modal-overlay" id="notif-modal">
+    <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>🔔 通知中心</h2>
+            <button class="close-btn" onclick="closeModal('notif-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="notif-list-body"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="reset-modal">
     <div class="modal-container" style="max-width: 360px;">
         <div class="modal-header">
@@ -290,7 +320,6 @@
             <button class="close-btn" onclick="closeModal('reset-modal')">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- 已隐去默认密码提示，保证安全 -->
             <input type="text" id="reset-key" class="input-elegant" placeholder="输入超级恢复密钥">
             <input type="password" id="reset-new-pw" class="input-elegant" placeholder="输入新密码">
             <button class="btn-apple" onclick="executeResetPassword()">确认重置</button>
@@ -374,7 +403,6 @@
             <input type="text" id="setting-username" class="input-elegant" placeholder="新用户名">
             <input type="password" id="setting-password" class="input-elegant" placeholder="新密码">
             
-            <!-- 管理员专属：超级恢复密钥配置 -->
             <div id="admin-recovery-section" style="display:none; margin-top:8px;">
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥 (用于忘密找回)</div>
                 <input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥">
@@ -410,7 +438,6 @@
     </div>
 </div>
 
-<!-- 转班功能模态框 -->
 <div class="modal-overlay" id="transfer-modal">
     <div class="modal-container" style="max-width: 400px;">
         <div class="modal-header">
@@ -491,6 +518,69 @@
     </div>
 </div>
 
+<!-- ================= 学生提交作业模态框 ================= -->
+<div class="modal-overlay" id="submit-hw-modal">
+    <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>📤 提交作业</h2>
+            <button class="close-btn" onclick="closeModal('submit-hw-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="background:#f5f7fa; padding:12px; border-radius:12px; margin-bottom:16px;">
+                <strong style="font-size:14px; display:block; margin-bottom:4px;" id="submit-hw-title-disp"></strong>
+                <span style="font-size:12px; color:var(--text-muted);" id="submit-hw-req-disp"></span>
+            </div>
+
+            <!-- 拟真UI：点击后弹窗提示 -->
+            <div style="display:flex; gap:12px; justify-content:center; margin-bottom:20px;">
+                <div class="upload-icon-btn" onclick="alert('为保证系统流畅，云端版当前不支持直接上传大文件。\\n👉 请将照片、文件或录音上传至【百度网盘】或【腾讯文档】，并将共享链接粘贴在下方的输入框中提交！')">
+                    <i>📷</i><span>拍照上传</span>
+                </div>
+                <div class="upload-icon-btn" onclick="alert('为保证系统流畅，云端版当前不支持直接上传大文件。\\n👉 请将照片、文件或录音上传至【百度网盘】或【腾讯文档】，并将共享链接粘贴在下方的输入框中提交！')">
+                    <i>📁</i><span>文件上传</span>
+                </div>
+                <div class="upload-icon-btn" onclick="alert('为保证系统流畅，云端版当前不支持直接上传大文件。\\n👉 请将照片、文件或录音上传至【百度网盘】或【腾讯文档】，并将共享链接粘贴在下方的输入框中提交！')">
+                    <i>🎤</i><span>语音录入</span>
+                </div>
+            </div>
+
+            <textarea id="submit-hw-text" class="input-elegant" placeholder="在此粘贴外部网盘/文档链接，或直接输入文字解答..." style="min-height:100px;"></textarea>
+            
+            <input type="hidden" id="submit-hw-id">
+            <button class="btn-apple btn-purple" onclick="executeSubmitHw()">确认提交作业</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= 老师批改作业模态框 ================= -->
+<div class="modal-overlay" id="grade-hw-modal">
+    <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>✍️ 批改作业</h2>
+            <button class="close-btn" onclick="closeModal('grade-hw-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="background:#f0f5ff; padding:12px; border-radius:12px; margin-bottom:16px;">
+                <strong style="font-size:14px; display:block; margin-bottom:4px; color:var(--accent-blue);" id="grade-hw-title-disp"></strong>
+                <div style="font-size:13px; color:var(--text-main); margin-top:8px;"><b>学生提交内容：</b><br><span id="grade-hw-content-disp" style="word-break:break-all;"></span></div>
+            </div>
+
+            <div class="flex-row">
+                <input type="text" id="grade-accuracy" class="input-elegant" style="flex:1; margin:0;" placeholder="正确率 / 等级 (如: 90% 或 A+)">
+                <input type="number" id="grade-points" class="input-elegant" style="flex:1; margin:0;" placeholder="本次加分 (选填)">
+            </div>
+            <textarea id="grade-comment" class="input-elegant" style="margin-top:16px;" placeholder="输入评价反馈..."></textarea>
+            
+            <input type="hidden" id="grade-hw-id">
+            
+            <div style="display:flex; gap:12px; margin-top:8px;">
+                <button class="btn-apple btn-green" style="flex:2;" onclick="executeGradeHw()">通过并打分</button>
+                <button class="btn-apple" style="flex:1; background:var(--danger-red);" onclick="executeReturnHw()">打回重做</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="class-select-modal">
     <div class="modal-container" style="max-width: 450px;">
         <div class="modal-header">
@@ -507,7 +597,6 @@
     const API_KEY = "$2a$10$fcJHZXRJVwHg0KkR0HtA../qbddedOMz/RycWGOgxXSD3ydbgjGeG"; 
     const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-    // 默认数据。给 admin 加上初始 recoveryKey
     let staffAccounts = { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员', recoveryKey: 'YUXING2026' } };
     let students = [];
     let classGroups = [];
@@ -562,10 +651,7 @@
             
             if(data && data.record) {
                 staffAccounts = data.record.staffAccounts || staffAccounts;
-                // 确保管理员数据结构完整
-                if(staffAccounts['admin'] && !staffAccounts['admin'].recoveryKey) {
-                    staffAccounts['admin'].recoveryKey = 'YUXING2026';
-                }
+                if(staffAccounts['admin'] && !staffAccounts['admin'].recoveryKey) staffAccounts['admin'].recoveryKey = 'YUXING2026';
                 
                 students = data.record.students || [];
                 classGroups = data.record.classGroups || [];
@@ -615,6 +701,7 @@
             if(statusEl) { statusEl.innerText = '☁️ 云端已同步'; setTimeout(() => statusEl.classList.remove('show'), 2000); }
             if(document.getElementById('finance-modal').style.display === 'flex') { openFinanceDashboard(); }
             if(currentUser && currentUser.role === 'admin') { renderAdminDashboard(); }
+            updateBadge(); // 保存完刷新一下红点
         }).catch(err => {
             console.error(err);
             if(statusEl) { statusEl.innerText = '⚠️ 同步失败，已存本地'; setTimeout(() => statusEl.classList.remove('show'), 3000); }
@@ -652,7 +739,8 @@
         localStorage.setItem('yuxing_session_v11', JSON.stringify({ user: currentUser, lastActive: Date.now() }));
         document.getElementById('login-view').style.display = 'none'; document.getElementById('app-view').style.display = 'block';
         document.getElementById('current-user-display').innerText = `${currentUser.name} (${currentUser.role === 'admin'?'校长/Admin':(currentUser.role === 'teacher'?'教师':'学生')})`;
-        applyRolePermissions(); renderTable(); if (currentUser.role === 'admin') renderAdminDashboard();
+        applyRolePermissions(); renderTable(); updateBadge();
+        if (currentUser.role === 'admin') renderAdminDashboard();
     }
 
     function forceLogout() {
@@ -662,25 +750,13 @@
     }
     window.handleLogout = forceLogout; 
 
-    // === 超级恢复密钥相关重构 ===
-    function openResetPassword() { 
-        document.getElementById('reset-key').value=''; 
-        document.getElementById('reset-new-pw').value=''; 
-        document.getElementById('reset-modal').style.display='flex'; 
-    }
+    function openResetPassword() { document.getElementById('reset-key').value=''; document.getElementById('reset-new-pw').value=''; document.getElementById('reset-modal').style.display='flex'; }
     function executeResetPassword() {
         const key = document.getElementById('reset-key').value.trim(), pw = document.getElementById('reset-new-pw').value.trim();
-        
-        // 读取云端的管理员专属恢复密钥，如果未设置则兜底 YUXING2026
         const validKey = (staffAccounts['admin'] && staffAccounts['admin'].recoveryKey) ? staffAccounts['admin'].recoveryKey : 'YUXING2026';
-        
         if (key !== validKey) return alert("超级恢复密钥错误！"); 
         if (!pw) return alert("新密码不能为空！");
-        
-        staffAccounts['admin'].password = pw; 
-        saveData(); 
-        closeModal('reset-modal'); 
-        alert("管理员密码重置成功，请登录。");
+        staffAccounts['admin'].password = pw; saveData(); closeModal('reset-modal'); alert("管理员密码重置成功，请登录。");
     }
 
     function getTeacherName(tUn) { return staffAccounts[tUn] ? staffAccounts[tUn].name : '未指派'; }
@@ -698,7 +774,114 @@
         }
     }
 
-    // ================= 财务大屏引擎 =================
+    // ================= 消息与通知中心 =================
+    // 自动为老数据初始化 notifications 数组
+    function ensureNotificationsInit() {
+        students.forEach(s => { if(!s.notifications) s.notifications = []; });
+    }
+
+    // 添加通知辅助函数
+    function addNotificationToStudent(studentId, msg) {
+        let s = students.find(x => x.id == studentId);
+        if(s) {
+            if(!s.notifications) s.notifications = [];
+            s.notifications.unshift({ id: Date.now() + Math.random(), message: msg, time: toLocalISOString(new Date()), read: false });
+        }
+    }
+
+    // 更新头部铃铛红点
+    function updateBadge() {
+        ensureNotificationsInit();
+        let unreadCount = 0;
+        
+        if (currentUser.role === 'student') {
+            let mySts = students.filter(s => s.username === currentUser.username);
+            mySts.forEach(s => {
+                s.notifications.forEach(n => { if(!n.read) unreadCount++; });
+            });
+        } else {
+            // 老师和管理员：统计有多少作业是 "submitted" (待批改) 状态的
+            let list = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
+            list.forEach(s => {
+                (s.assignments || []).forEach(hw => {
+                    if(hw.status === 'submitted') unreadCount++;
+                });
+            });
+        }
+
+        const badge = document.getElementById('nav-notif-badge');
+        if(unreadCount > 0) {
+            badge.innerText = unreadCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function openNotificationsModal() {
+        updateBadge();
+        const listBody = document.getElementById('notif-list-body');
+        let html = '';
+
+        if (currentUser.role === 'student') {
+            let mySts = students.filter(s => s.username === currentUser.username);
+            let allNotifs = [];
+            mySts.forEach(s => {
+                s.notifications.forEach(n => { allNotifs.push({...n, course: s.className, sId: s.id}); });
+            });
+            allNotifs.sort((a,b) => new Date(b.time) - new Date(a.time));
+
+            if(allNotifs.length === 0) {
+                html = '<p style="color:var(--text-muted); text-align:center;">暂无通知</p>';
+            } else {
+                allNotifs.forEach(n => {
+                    let dot = n.read ? '' : '<span style="color:var(--danger-red); font-size:18px; margin-right:4px;">•</span>';
+                    html += `<div class="item-card" style="cursor:pointer;" onclick="markNotifRead('${n.id}', ${n.sId})">
+                        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🕒 ${n.time.replace('T', ' ')} | 课程: ${n.course}</div>
+                        <div>${dot}${n.message}</div>
+                    </div>`;
+                });
+            }
+        } else {
+            // 老师端通知展示待批改列表
+            let list = currentUser.role === 'admin' ? students : students.filter(s => s.teacherUsername === currentUser.username);
+            let hwNotifs = [];
+            list.forEach(s => {
+                (s.assignments || []).forEach(hw => {
+                    if(hw.status === 'submitted') {
+                        hwNotifs.push({ sName: s.name, cName: s.className, title: hw.title, sId: s.id });
+                    }
+                });
+            });
+            
+            if(hwNotifs.length === 0) {
+                html = '<p style="color:var(--text-muted); text-align:center;">暂无待处理通知</p>';
+            } else {
+                html += `<div style="font-size:13px; color:var(--accent-orange); margin-bottom:12px;">你有 ${hwNotifs.length} 份学生作业待批改：</div>`;
+                hwNotifs.forEach(n => {
+                    html += `<div class="item-card" style="cursor:pointer;" onclick="closeModal('notif-modal'); openStudentDetailById(${n.sId})">
+                        <div style="font-weight:600;">学生 ${n.sName} [${n.cName}]</div>
+                        <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">提交了作业: ${n.title}</div>
+                        <div style="margin-top:8px; font-size:12px; color:var(--accent-blue);">👉 点击前往档案页批改</div>
+                    </div>`;
+                });
+            }
+        }
+        
+        listBody.innerHTML = html;
+        document.getElementById('notif-modal').style.display = 'flex';
+    }
+
+    function markNotifRead(notifId, sId) {
+        let s = students.find(x => x.id === sId);
+        if(s) {
+            let n = s.notifications.find(x => x.id == notifId);
+            if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); }
+        }
+    }
+
+
+    // ================= 表格渲染引擎 =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         students.forEach(s => {
@@ -803,7 +986,7 @@
         delete staffAccounts[un]; saveData(); renderTable(); 
     }
 
-    // ================= 班级与学生录入 (含班级重命名与批量换老师) =================
+    // ================= 班级与学生录入 =================
     function openClassManageModal() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`;
         document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList();
@@ -856,7 +1039,7 @@
         if(!name || !un || !cls) return alert("信息不全"); if(staffAccounts[un]) return alert("账号不可与教职工冲突");
         let exUser = students.find(s => s.username === un); if (exUser && exUser.password !== pw) return alert("报多门课密码须一致！");
         let targetCls = classGroups.find(c => c.name === cls); let assignTeacher = targetCls ? targetCls.teacherUsername : currentUser.username;
-        students.push({ id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate, teacherUsername: assignTeacher, totalPoints: initPts, attendance: [], assignments: [], bills: [] });
+        students.push({ id: Date.now(), username: un, password: pw, name, className: cls, hourlyRate: rate, teacherUsername: assignTeacher, totalPoints: initPts, attendance: [], assignments: [], bills: [], notifications: [] });
         saveData(); closeModal('add-modal'); renderTable(); alert("学生及课程添加成功！");
     }
     function deleteStudentGroup(usernameKey) {
@@ -872,7 +1055,7 @@
         alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`);
     }
 
-    // ================= 批量打卡与作业 =================
+    // ================= 批量打卡与作业发布 =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select');
@@ -888,17 +1071,29 @@
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="pub-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
         document.getElementById('pub-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">该班级暂无学生</span>';
     }
+    
     function publishClassHomework() {
         const cls = document.getElementById('pub-class-select').value; if(!cls) return alert("请先选择班级");
         const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim(), hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim();
         let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
         let actionCount = 0;
+        
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
             if(s) {
                 if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
                 else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
-                if(hwTitle) s.assignments.unshift({ title: hwTitle, content: hwContent, accuracy: "待批改", points: 0, comment: "未评价" });
+                
+                if(hwTitle) {
+                    // 初始化包含 status 字段的新作业结构
+                    let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                    s.assignments.unshift({ 
+                        id: newHwId, title: hwTitle, content: hwContent, 
+                        status: "pending", submitContent: "", submitHistory: [],
+                        accuracy: "待批改", points: 0, comment: "未评价" 
+                    });
+                    addNotificationToStudent(s.id, `老师发布了新作业: <b>${hwTitle}</b>，请及时提交！`);
+                }
                 actionCount++;
             }
         });
@@ -935,10 +1130,7 @@
         } else if(targetVal.startsWith('studentrecord_')) {
             let recordId = targetVal.replace('studentrecord_', '');
             let targetS = students.find(s => s.id == recordId);
-            if(targetS) {
-                activeLiveClass = `${targetS.name} (${targetS.className})`;
-                stList = [targetS]; 
-            }
+            if(targetS) { activeLiveClass = `${targetS.name} (${targetS.className})`; stList = [targetS]; }
         }
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join('');
         document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
@@ -953,10 +1145,7 @@
         closeModal('live-setup-modal'); 
         
         liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval);
-        liveInterval = setInterval(() => { 
-            liveSeconds++; 
-            document.getElementById('float-timer-display').innerText = formatTime(liveSeconds);
-        }, 1000);
+        liveInterval = setInterval(() => { liveSeconds++; document.getElementById('float-timer-display').innerText = formatTime(liveSeconds); }, 1000);
         document.getElementById('float-title').innerText = `🔴 ${activeLiveClass} 上课中`;
         document.getElementById('float-btn-toggle').innerText = '⏸️ 暂停'; document.getElementById('float-btn-toggle').className = 'btn-apple btn-orange';
         document.getElementById('floating-timer-box').style.display = 'block';
@@ -995,7 +1184,10 @@
         let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
         activeLiveStudentIds.forEach(id => {
             let s = students.find(x => x.id == id);
-            if(s) s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false });
+            if(s) {
+                s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false });
+                addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`);
+            }
         });
         saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderTable(); if(currentUser.role==='admin') renderAdminDashboard();
     }
@@ -1029,15 +1221,12 @@
 
     function startClassroomInt(targetVal, clsName) {
         closeModal('class-select-modal'); tempClassPoints = {};
-        let targetStudents = [];
-        let titleName = '';
+        let targetStudents = []; let titleName = '';
         if(targetVal.startsWith('class_')) {
-            titleName = `${clsName}`;
-            targetStudents = students.filter(s => s.className === clsName);
+            titleName = `${clsName}`; targetStudents = students.filter(s => s.className === clsName);
             if (currentUser.role === 'teacher') { targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username); }
         } else if(targetVal.startsWith('student_')) {
-            let sName = targetVal.replace('student_', '');
-            titleName = currentUser.role === 'student' ? `${clsName}` : `${sName}`;
+            let sName = targetVal.replace('student_', ''); titleName = currentUser.role === 'student' ? `${clsName}` : `${sName}`;
             targetStudents = students.filter(s => s.name === sName && s.className === clsName);
             if (currentUser.role === 'teacher') { targetStudents = targetStudents.filter(s => s.teacherUsername === currentUser.username); } 
             else if (currentUser.role === 'student') { targetStudents = targetStudents.filter(s => s.username === currentUser.username); }
@@ -1064,11 +1253,100 @@
     }
     function closeClassroomInteraction() {
         for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; }
-        saveData(); renderTable(); 
-        document.getElementById('floating-points-box').style.display = 'none';
+        saveData(); renderTable(); document.getElementById('floating-points-box').style.display = 'none';
     }
 
-    // ================= 档案详情、换老师与转班 =================
+    // ================= 作业提交与批改逻辑 =================
+    function openSubmitHw(studentId, hwId) {
+        let s = students.find(x => x.id === studentId);
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId); // 兼容老数据用 title
+        if(!hw) return;
+
+        document.getElementById('submit-hw-id').value = hwId;
+        document.getElementById('submit-hw-title-disp').innerText = `作业题目: ${hw.title}`;
+        document.getElementById('submit-hw-req-disp').innerText = hw.content ? `要求: ${hw.content}` : '无具体要求';
+        
+        // 保留上次输入的草稿（如果有）
+        document.getElementById('submit-hw-text').value = hw.submitContent || '';
+        
+        document.getElementById('submit-hw-modal').style.display = 'flex';
+    }
+
+    function executeSubmitHw() {
+        let hwId = document.getElementById('submit-hw-id').value;
+        let submitText = document.getElementById('submit-hw-text').value.trim();
+        if(!submitText) return alert("提交内容不能为空！您可以输入文字解答或粘贴外部链接。");
+
+        let s = students.find(x => x.id === currentStudentId);
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
+        
+        hw.submitContent = submitText;
+        hw.status = 'submitted'; // 状态变为已提交，等待批改
+        hw.accuracy = "等待老师批改";
+        hw.comment = "未评价";
+
+        saveData(); closeModal('submit-hw-modal'); 
+        alert("作业提交成功！已通知老师批改。");
+        renderStudentDetails();
+    }
+
+    function openGradeHw(studentId, hwId) {
+        let s = students.find(x => x.id === studentId);
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
+        if(!hw) return;
+
+        document.getElementById('grade-hw-id').value = hwId;
+        document.getElementById('grade-hw-title-disp').innerText = `作业题目: ${hw.title}`;
+        document.getElementById('grade-hw-content-disp').innerText = hw.submitContent || '无内容';
+        
+        document.getElementById('grade-accuracy').value = hw.accuracy === "等待老师批改" ? "" : hw.accuracy;
+        document.getElementById('grade-points').value = '';
+        document.getElementById('grade-comment').value = '';
+
+        document.getElementById('grade-hw-modal').style.display = 'flex';
+    }
+
+    function executeGradeHw() {
+        let hwId = document.getElementById('grade-hw-id').value;
+        let accuracy = document.getElementById('grade-accuracy').value.trim() || '合格';
+        let points = parseInt(document.getElementById('grade-points').value) || 0;
+        let comment = document.getElementById('grade-comment').value.trim() || '很棒，继续保持！';
+
+        let s = students.find(x => x.id === currentStudentId);
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
+
+        hw.accuracy = accuracy;
+        hw.points = points;
+        hw.comment = comment;
+        hw.status = 'graded';
+        s.totalPoints = (s.totalPoints || 0) + points;
+
+        addNotificationToStudent(s.id, `老师已批改了你的作业 <b>${hw.title}</b>。得分：${accuracy}，评价：${comment}`);
+        saveData(); closeModal('grade-hw-modal'); alert("批改完成！已发放积分并通知学生。"); renderStudentDetails();
+    }
+
+    function executeReturnHw() {
+        let hwId = document.getElementById('grade-hw-id').value;
+        let comment = document.getElementById('grade-comment').value.trim();
+        if(!comment) return alert("打回重做必须填写评价/原因，告诉学生哪里需要修改！");
+
+        let s = students.find(x => x.id === currentStudentId);
+        let hw = s.assignments.find(x => x.id === hwId || x.title === hwId);
+
+        // 记录被打回的历史
+        if(!hw.submitHistory) hw.submitHistory = [];
+        hw.submitHistory.push({ content: hw.submitContent, returnComment: comment, time: toLocalISOString(new Date()) });
+
+        hw.submitContent = ''; // 清空内容让学生重填
+        hw.status = 'returned';
+        hw.accuracy = '被打回重做';
+        hw.comment = comment;
+
+        addNotificationToStudent(s.id, `⚠️ 你的作业 <b>${hw.title}</b> 被老师打回重做了。老师留言：${comment}`);
+        saveData(); closeModal('grade-hw-modal'); alert("作业已打回！已通知学生重做。"); renderStudentDetails();
+    }
+
+    // ================= 档案详情、转班与展示 =================
     let transferTargetStudentId = null;
 
     function openStudentDetailById(id) {
@@ -1080,7 +1358,6 @@
         if(!s) return;
         
         let stList = (currentUser.role === 'student') ? students.filter(x => x.username === currentUser.username) : students.filter(x => x.username === s.username);
-        
         document.getElementById('detail-title').childNodes[0].nodeValue = `学生档案: ${s.name} `;
         
         if (currentUser.role !== 'student') {
@@ -1105,36 +1382,25 @@
 
         if (isAdmin) {
             let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}" ${s.teacherUsername === key ? 'selected' : ''}>${staffAccounts[key].name}</option>`;
-            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">单独更换该生任课老师 (保留所有历史记录)：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
+            html += `<div class="item-card flex-row" style="background:#f0f5ff; border:none; padding:10px 16px;"><strong style="color:var(--accent-blue)">单独更换该生任课老师：</strong><select class="input-elegant" style="margin:0; width:150px; padding:6px;" onchange="updateIndividualTeacher(this.value)">${tOpts}</select></div>`;
         }
 
         if (isManager) {
             html += `<div class="item-card flex-row" style="background:#fff3e0; border:none;"><strong style="color:var(--accent-orange)">本课积分：</strong><input type="number" class="input-elegant" style="margin:0; width:100px; padding:6px; font-weight:bold;" value="${s.totalPoints || 0}" onchange="updateStudentTotalPoints(this.value)"></div>`;
             html += `<div class="section-title">💰 本课程财务与催费单</div>`;
             let currentUnpaidCost = 0;
-            (s.attendance || []).forEach(a => {
-                if(a.endTime && a.startTime && !a.billed) {
-                    let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000;
-                    if(hrs > 0) currentUnpaidCost += hrs * (s.hourlyRate || 0);
-                }
-            });
+            (s.attendance || []).forEach(a => { if(a.endTime && a.startTime && !a.billed) { let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000; if(hrs > 0) currentUnpaidCost += hrs * (s.hourlyRate || 0); } });
+            
             if(currentUnpaidCost > 0) {
-                html += `<div class="item-card" style="background:rgba(245,99,0,0.05); border:1px solid rgba(245,99,0,0.2);">
-                    <div style="font-weight:600; color:var(--accent-orange);">当前待催费金额 (本课程未结清记录)</div>
-                    <div style="font-size:22px; font-weight:700; margin-top:4px;">￥${currentUnpaidCost.toFixed(2)}</div>
-                    <button class="btn-apple btn-orange" style="position:absolute; right:16px; top:16px; width:auto; padding:6px 14px; font-size:13px;" onclick="generateBillForStudent(${s.id}, ${currentUnpaidCost})">生成正式催费账单</button>
-                </div>`;
+                html += `<div class="item-card" style="background:rgba(245,99,0,0.05); border:1px solid rgba(245,99,0,0.2);"><div style="font-weight:600; color:var(--accent-orange);">当前待催费金额</div><div style="font-size:22px; font-weight:700; margin-top:4px;">￥${currentUnpaidCost.toFixed(2)}</div><button class="btn-apple btn-orange" style="position:absolute; right:16px; top:16px; width:auto; padding:6px 14px; font-size:13px;" onclick="generateBillForStudent(${s.id}, ${currentUnpaidCost})">生成正式催费账单</button></div>`;
             }
 
             if (s.bills && s.bills.length > 0) {
                 s.bills.forEach((b, billIdx) => {
                     let statusUI = b.status === 'paid' ? `<span class="badge" style="background:#e3fcef; color:#118d57;">已结清</span>` : `<span class="badge" style="background:#ffebe6; color:#bf2600;">待支付 (催费中)</span>`;
                     let actionBtnsHtml = '';
-                    if (b.status === 'unpaid') {
-                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;"><button class="btn-apple btn-green" style="padding:6px 10px; font-size:12px; width:auto;" onclick="confirmPayment('${b.id}')">确认收到汇款</button><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回并恢复</button></div>`;
-                    } else {
-                        actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;"><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤销已结清账单</button></div>`;
-                    }
+                    if (b.status === 'unpaid') { actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px; display:flex; gap:6px;"><button class="btn-apple btn-green" style="padding:6px 10px; font-size:12px; width:auto;" onclick="confirmPayment('${b.id}')">确认收款</button><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤回</button></div>`; } 
+                    else { actionBtnsHtml = `<div style="position:absolute; right:16px; top:12px;"><button class="btn-apple" style="background:var(--danger-red); padding:6px 10px; font-size:12px; width:auto;" onclick="revokeBill(${s.id}, '${b.id}')">撤销结清</button></div>`; }
                     html += `<div class="item-card"><div style="font-weight:600;">账单批次: ${b.month}</div><div style="font-size:18px; font-weight:700; margin-top:4px;">￥${b.amount.toFixed(2)} ${statusUI}</div>${actionBtnsHtml}</div>`;
                 });
             } else { html += `<div class="item-card" style="text-align:center; color:var(--text-muted);">本课程暂无历史账单</div>`; }
@@ -1142,8 +1408,64 @@
             html += `<div class="section-title">📚 我的学习记录 (${s.className})</div>`;
         }
 
-        html += `<div class="section-title">📌 历史动态轨迹</div>`;
-        html += `<div style="color:var(--text-muted); font-size:12px; margin-bottom:8px;">▶ 课堂纪实列表</div>`;
+        html += `<div class="section-title">📌 课后作业与评价闭环</div>`;
+        s.assignments.forEach((hw, idx) => {
+            // 兼容老数据缺少 ID 或 status
+            let safeHwId = hw.id || hw.title; 
+            if(!hw.status) hw.status = (hw.accuracy === "待批改" ? "pending" : "graded");
+
+            let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">作业要求: ${hw.content}</div>` : '';
+            
+            let statusBadge = '';
+            let actionBtn = '';
+            
+            if (hw.status === 'pending') {
+                statusBadge = `<span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main);">待提交</span>`;
+                if (!isManager) actionBtn = `<button class="btn-apple btn-purple" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 去提交</button>`;
+            } else if (hw.status === 'submitted') {
+                statusBadge = `<span class="badge class" style="background:rgba(0,113,227,0.1); color:var(--accent-blue);">待批改</span>`;
+                if (isManager) actionBtn = `<button class="btn-apple btn-green" style="position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openGradeHw(${s.id}, '${safeHwId}')">✍️ 批改作业</button>`;
+                else actionBtn = `<span style="position:absolute; right:16px; top:16px; font-size:12px; color:var(--accent-blue);">🕒 老师批改中...</span>`;
+            } else if (hw.status === 'returned') {
+                statusBadge = `<span class="badge" style="background:rgba(255,59,48,0.1); color:var(--danger-red);">被打回重做</span>`;
+                if (!isManager) actionBtn = `<button class="btn-apple" style="background:var(--danger-red); position:absolute; right:16px; top:16px; padding:6px 12px; font-size:12px; width:auto;" onclick="openSubmitHw(${s.id}, '${safeHwId}')">📤 重新提交</button>`;
+            } else if (hw.status === 'graded') {
+                statusBadge = `<span class="badge class" style="background:rgba(52,199,89,0.1); color:var(--accent-green);">已批改: ${hw.accuracy}</span><span class="badge" style="background:rgba(245,99,0,0.1); color:var(--accent-orange); margin-left:6px;">得 ${hw.points} 分</span>`;
+            }
+
+            let commentSec = hw.comment && hw.comment !== "未评价" ? `<div style="margin-top:6px; font-size:13px; color:var(--accent-orange);">👨‍🏫 老师反馈: ${hw.comment}</div>` : '';
+            let mySubmitSec = hw.submitContent ? `<div style="margin-top:6px; font-size:13px; color:var(--text-muted); background:#f9f9fb; padding:6px; border-radius:6px; word-break:break-all;"><b>我的提交:</b> ${hw.submitContent}</div>` : '';
+            
+            // 渲染历史打回记录
+            let historySec = '';
+            if(hw.submitHistory && hw.submitHistory.length > 0) {
+                historySec += `<div style="margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:8px;">`;
+                historySec += `<div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">▼ 历史打回记录 (${hw.submitHistory.length}次)</div>`;
+                hw.submitHistory.forEach(h => {
+                    historySec += `<div style="font-size:12px; background:rgba(255,59,48,0.05); padding:6px; border-radius:6px; margin-bottom:4px; color:var(--danger-red);">
+                        <div><b>原提交:</b> <span style="color:var(--text-muted);">${h.content}</span></div>
+                        <div style="margin-top:2px;"><b>打回原因:</b> ${h.returnComment}</div>
+                    </div>`;
+                });
+                historySec += `</div>`;
+            }
+
+            let delBtn = isManager ? `<span class="del-mini" style="font-size:11px; color:#ff3b30; cursor:pointer; position:absolute; right:16px; bottom:16px;" onclick="delRec('hw', ${idx})">撤销此条作业</span>` : '';
+
+            html += `<div class="item-card" style="padding-bottom: ${isManager ? '40px' : '16px'};">
+                <strong style="font-size:15px; display:inline-block; margin-bottom:6px;">📖 ${hw.title}</strong>
+                ${statusBadge}
+                ${hwReq}
+                ${mySubmitSec}
+                ${commentSec}
+                ${historySec}
+                ${actionBtn}
+                ${delBtn}
+            </div>`;
+        });
+        if(s.assignments.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无作业记录</p>`;
+
+        html += `<div class="section-title">📌 课堂纪实轨迹</div>`;
         s.attendance.forEach((rec, idx) => {
             let duration = rec.isClassFeedback ? '📝 班级统一反馈' : '';
             if(rec.startTime && rec.endTime) { duration = `${rec.startTime.replace('T',' ')} - ${rec.endTime.split('T')[1] || rec.endTime}`; }
@@ -1153,130 +1475,59 @@
         });
         if(s.attendance.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无课堂记录</p>`;
 
-        html += `<div style="color:var(--text-muted); font-size:12px; margin:16px 0 8px 0;">▶ 课后作业与评价</div>`;
-        s.assignments.forEach((hw, idx) => {
-            let delBtn = isManager ? `<span class="del-mini" style="font-size:11px; color:#ff3b30; cursor:pointer; position:absolute; right:16px; top:16px;" onclick="delRec('hw', ${idx})">撤销此条</span>` : '';
-            let hwReq = hw.content ? `<div style="font-size:12px; background:#f0f0f5; padding:6px; border-radius:6px; margin-top:6px;">要求: ${hw.content}</div>` : '';
-            html += `<div class="item-card"><strong style="font-size:15px;">📖 ${hw.title}</strong><span class="badge class" style="margin-left:8px;">正确率: ${hw.accuracy}</span><span class="badge" style="background:rgba(245,99,0,0.1); color:var(--accent-orange);">得 ${hw.points} 分</span>${hwReq}<div style="margin-top:6px; font-size:14px; color:var(--text-muted);">👨‍🏫 评语: ${hw.comment}</div>${delBtn}</div>`;
-        });
-        if(s.assignments.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无作业记录</p>`;
-
         content.innerHTML = html;
     }
     
     function openTransferClassModal(studentId) {
-        transferTargetStudentId = studentId;
-        let s = students.find(x => x.id === studentId);
-        if(!s) return;
-        document.getElementById('transfer-student-name').innerText = s.name;
-        document.getElementById('transfer-keep-records').checked = true;
-        
+        transferTargetStudentId = studentId; let s = students.find(x => x.id === studentId); if(!s) return;
+        document.getElementById('transfer-student-name').innerText = s.name; document.getElementById('transfer-keep-records').checked = true;
         let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username);
         let opts = `<option value="" hidden>请选择目标班级...</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-        document.getElementById('transfer-target-class').innerHTML = opts;
-        
-        document.getElementById('transfer-modal').style.display = 'flex';
+        document.getElementById('transfer-target-class').innerHTML = opts; document.getElementById('transfer-modal').style.display = 'flex';
     }
 
     function executeTransferClass() {
         let targetClassName = document.getElementById('transfer-target-class').value;
         let keepRecords = document.getElementById('transfer-keep-records').checked;
         if(!targetClassName) return alert("请先选择目标班级！");
-        
         let s = students.find(x => x.id === transferTargetStudentId);
         if(s.className === targetClassName) return alert("学生当前已经在该班级，无需转移。");
-        
-        let targetClass = classGroups.find(c => c.name === targetClassName);
-        if(!targetClass) return;
-
-        s.className = targetClassName;
-        s.teacherUsername = targetClass.teacherUsername; 
-
-        if(!keepRecords) {
-            s.attendance = []; s.assignments = []; s.bills = []; s.totalPoints = 0;
-        }
-
+        let targetClass = classGroups.find(c => c.name === targetClassName); if(!targetClass) return;
+        s.className = targetClassName; s.teacherUsername = targetClass.teacherUsername; 
+        if(!keepRecords) { s.attendance = []; s.assignments = []; s.bills = []; s.totalPoints = 0; s.notifications = []; }
         saveData(); closeModal('transfer-modal'); renderTable();
         if (document.getElementById('detail-modal').style.display === 'flex') { renderStudentDetails(); }
         alert(`已成功将学生 [${s.name}] 转移至班级 [${targetClassName}]。${keepRecords ? '历史记录已同步保留。' : '历史记录已清空，作为全新报名处理。'}`);
     }
 
-    window.updateStudentTotalPoints = function(newVal) { let s = students.find(x => x.id === currentStudentId); s.totalPoints = parseInt(newVal)||0; saveData(); renderTable(); }
-    
-    function generateBillForStudent(studentId, amount) {
-        let s = students.find(x => x.id === studentId); let monthStr = new Date().toISOString().slice(0, 7); 
-        s.bills = s.bills || []; s.bills.push({ id: 'BILL_' + Date.now(), month: monthStr + ' 快捷催费单', amount: amount, status: 'unpaid' });
-        (s.attendance || []).forEach(a => { if(a.endTime && !a.billed) a.billed = true; });
-        saveData(); renderStudentDetails(); alert("已成功生成催费账单！");
-    }
+    function generateBillForStudent(studentId, amount) { let s = students.find(x => x.id === studentId); let monthStr = new Date().toISOString().slice(0, 7); s.bills = s.bills || []; s.bills.push({ id: 'BILL_' + Date.now(), month: monthStr + ' 快捷催费单', amount: amount, status: 'unpaid' }); (s.attendance || []).forEach(a => { if(a.endTime && !a.billed) a.billed = true; }); saveData(); renderStudentDetails(); alert("已成功生成催费账单！"); }
     function confirmPayment(billId) { let s = students.find(x => x.id === currentStudentId); let b = s.bills.find(x => x.id === billId); b.status = 'paid'; saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); }
-    function revokeBill(studentId, billId) {
-        if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return;
-        let s = students.find(x => x.id === studentId); s.bills = s.bills.filter(b => b.id !== billId);
-        (s.attendance || []).forEach(a => { a.billed = false; }); saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); alert("已成功撤销该催费单并恢复未结清状态！");
-    }
+    function revokeBill(studentId, billId) { if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return; let s = students.find(x => x.id === studentId); s.bills = s.bills.filter(b => b.id !== billId); (s.attendance || []).forEach(a => { a.billed = false; }); saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); alert("已成功撤销该催费单并恢复未结清状态！"); }
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id === currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
 
     function openAddTeacherModal() { document.getElementById('new-teacher-name').value = ''; document.getElementById('new-teacher-username').value = ''; document.getElementById('add-teacher-modal').style.display = 'flex'; }
-    function addTeacher() {
-        const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim();
-        if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在");
-        staffAccounts[un] = { role: 'teacher', name, password: pw }; saveData(); renderTable(); closeModal('add-teacher-modal'); alert("添加成功");
-    }
+    function addTeacher() { const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim(); if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在"); staffAccounts[un] = { role: 'teacher', name, password: pw }; saveData(); renderTable(); closeModal('add-teacher-modal'); alert("添加成功"); }
     
     // === 账号与超级密钥修改 ===
     function openAccountModal() { 
-        document.getElementById('setting-username').value = currentUser.username; 
-        document.getElementById('setting-password').value = ''; 
-        
+        document.getElementById('setting-username').value = currentUser.username; document.getElementById('setting-password').value = ''; 
         let adminSec = document.getElementById('admin-recovery-section');
-        if (currentUser.role === 'admin') {
-            adminSec.style.display = 'block';
-            document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026';
-        } else {
-            adminSec.style.display = 'none';
-        }
-        
+        if (currentUser.role === 'admin') { adminSec.style.display = 'block'; document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026'; } else { adminSec.style.display = 'none'; }
         document.getElementById('account-modal').style.display = 'flex'; 
     }
-    
     function changeAccount() {
         const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim();
         if(!u || !p) return alert("用户名和新密码不能为空");
-        if (currentUser.role === 'student') { 
-            students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; } }); 
-        } else { 
-            let data = staffAccounts[currentUser.username]; 
-            delete staffAccounts[currentUser.username]; 
-            staffAccounts[u] = data; 
-            staffAccounts[u].password = p; 
-            
-            if(staffAccounts[u].role === 'admin') {
-                const recKey = document.getElementById('setting-recovery-key').value.trim();
-                if(recKey) staffAccounts[u].recoveryKey = recKey;
-            }
+        if (currentUser.role === 'student') { students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; } }); } 
+        else { 
+            let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; 
+            if(staffAccounts[u].role === 'admin') { const recKey = document.getElementById('setting-recovery-key').value.trim(); if(recKey) staffAccounts[u].recoveryKey = recKey; }
         }
         currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功，修改已同步。");
     }
 
     function toLocalISOString(date) { const pad = n => n < 10 ? '0' + n : n; return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()); }
-    
-    function openFinanceDashboard() {
-        document.getElementById('finance-modal').style.display = 'flex'; 
-        let studentData = {};
-        students.forEach(s => {
-            let sTotal = 0; 
-            (s.attendance || []).forEach(a => {
-                if(a.endTime && a.startTime) { let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000; if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0); }
-            });
-            if (sTotal > 0) { studentData[s.name] = (studentData[s.name] || 0) + sTotal; }
-        });
-        if(chartMonthly) chartMonthly.destroy();
-        chartMonthly = new Chart(document.getElementById('chart-monthly'), { type: 'bar', data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
-        if(chartStudents) chartStudents.destroy();
-        chartStudents = new Chart(document.getElementById('chart-students'), { type: 'doughnut', data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } });
-    }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBadge(); }
 </script>
 </body>
 </html>
