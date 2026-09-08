@@ -111,6 +111,7 @@
         .btn-mini.red { background: rgba(255,59,48,0.1); color: var(--danger-red); }
         .btn-mini.red:hover { background: var(--danger-red); color: #fff; }
 
+        /* 卡片式大厅设计 */
         .dashboard-class-card {
             background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: 0 4px 15px rgba(0,0,0,0.03);
@@ -224,7 +225,8 @@
             <h1>予行管理中心 <span>Yuxing.student.management</span></h1>
             <div class="user-tag" id="current-user-display"></div>
             <div style="margin-top: 8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openAccountModal()">账号设置</button>
+                <!-- 提示：测试按钮在这个【账号设置】里面 -->
+                <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openAccountModal()">账号设置 (含微信测试)</button>
                 <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="forceLogout()">安全退出</button>
                 <button class="btn-apple btn-secondary" id="refresh-btn" style="padding: 6px 12px; font-size: 12px; width: auto; color: var(--accent-orange); font-weight:bold;" onclick="forceRefresh()">🔄 刷新数据</button>
                 <span id="cloud-status" style="margin-left: 4px;">☁️ 云端同步中...</span>
@@ -242,7 +244,9 @@
             <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时上课</button>
             <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
             
-            <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 补录打卡</button>
+            <!-- 打卡与作业二合一入口 -->
+            <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 补录打卡/发作业</button>
+            
             <button class="btn-apple manage-only" style="background:#5e5ce6; width: auto;" onclick="openAssignHwModal()">📖 布置独立作业</button>
             <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
@@ -354,7 +358,6 @@
             <textarea id="assign-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
             <div style="margin-bottom:16px; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
                 <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;"><input type="checkbox" id="assign-hw-requires-submit" checked style="margin-top:4px;"><span>要求学生在线上提交附件或文字解答</span></label>
-                <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">提示：如果取消勾选，学生将无需在系统内提交，您可以直接在档案页进行“线下批改”。</p>
             </div>
             <button class="btn-apple btn-purple" onclick="executeAssignStandaloneHw()">发布作业</button>
         </div>
@@ -420,7 +423,8 @@
             <div style="margin-top:8px;">
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
                 <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
-                <!-- 终极跨域神级修复版：新网页直达查错 -->
+                
+                <!-- 直连测试按钮 -->
                 <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1);" onclick="testWxPush()">🔔 点击自测：发送一条微信通知</button>
             </div>
             <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
@@ -457,16 +461,29 @@
 
 <div class="modal-overlay" id="publish-hw-modal">
     <div class="modal-container" style="max-width: 650px;">
-        <div class="modal-header"><h2>📝 补录打卡与反馈</h2><button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button></div>
+        <div class="modal-header"><h2>📝 补录打卡与发布作业</h2><button class="close-btn" onclick="closeModal('publish-hw-modal')">&times;</button></div>
         <div class="modal-body">
-            <p style="font-size:12px; color:var(--accent-orange); margin-top:0;">⚠️ 提示：如果您在平时上课时使用了【实时上课计时】，此页面仅用于写评语（起止时间默认留空，不会扣费）。只有当您忘记计时需要补录课时，才在此填写时间。</p>
-            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选出勤学生</div>
+            <p style="font-size:12px; color:var(--accent-orange); margin-top:0;">⚠️ 提示：您可以选择仅记课时、仅留作业，或两者同时进行。空白的模块将不会被记录。</p>
+            <div class="section-title" style="margin-top:0; color:var(--text-muted); font-size:12px;">1. 选择班级并勾选目标学生</div>
             <select id="pub-class-select" class="input-elegant" onchange="renderPubStudentCheckboxes(this.value)"></select>
             <div id="pub-student-list" class="student-checkbox-list"></div>
+            
             <div class="section-title" style="color:var(--text-muted); font-size:12px;">2. 补录时间与课堂纪实 (如已使用实时计时，起止时间请留空)</div>
             <div class="flex-row"><input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间"><span style="color:var(--text-muted)">至</span><input type="datetime-local" id="pub-end" class="input-elegant" style="margin:0; flex:1;" title="下课时间"></div>
-            <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
-            <button class="btn-apple btn-secondary" onclick="publishClassHomework()">为选中学生录入打卡档案</button>
+            <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px; min-height:50px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
+            
+            <!-- 新增的作业模块 -->
+            <div class="section-title" style="color:var(--text-muted); font-size:12px; margin-top:16px;">3. 同步布置课后作业 (选填，不填则不布置)</div>
+            <input type="text" id="pub-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称 (选填)">
+            <textarea id="pub-hw-content" class="input-elegant" style="min-height:50px;" placeholder="作业具体要求..."></textarea>
+            <div style="margin-bottom:16px; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
+                <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="pub-hw-requires-submit" checked style="margin-top:4px;">
+                    <span>要求学生在线上提交附件或文字解答</span>
+                </label>
+            </div>
+
+            <button class="btn-apple btn-secondary" style="background:#5e5ce6; color:#fff;" onclick="publishClassHomework()">一键处理勾选学生的打卡与作业</button>
         </div>
     </div>
 </div>
@@ -576,27 +593,30 @@
         return html.replace(/\n/g, '<br>');
     }
 
-    // ================= 微信推送自测与接口修复 (终极绕过跨域版) =================
-    function testWxPush() {
+    // ================= 微信推送直连版 =================
+    async function testWxPush() {
         const uid = document.getElementById('setting-wx-uid').value.trim();
-        if(!uid) return alert("❌ 请先在上方填写你的 UID！");
+        if(!uid) return alert("❌ 请先在上方填写你的 UID！(例如: UID_xxxx)");
         if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
-        
-        const testMsg = "✅ 恭喜！予行系统微信推送通道已打通！";
-        // 使用 WxPusher 官方支持的 GET 请求方式
-        const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(testMsg)}`;
-        
-        // 直接打开新网页，让用户亲眼看到 WxPusher 服务器的真实返回结果
-        window.open(url, '_blank');
-        alert("💡 系统已在【新标签页】中发送了测试请求！\n\n👉 如果新网页中显示：\"code\": 1000，说明成功！请看微信。\n👉 如果显示：\"code\": 1004 等，说明您的 UID 填错了，或者没关注公众号，请按提示检查。");
+        try {
+            const response = await fetch('https://wxpusher.zjiecode.com/api/send/message', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: "✅ 恭喜！你的予行系统微信推送配置成功！能收到这条消息代表连接完全正常。", contentType: 1, uids: [uid] })
+            });
+            const data = await response.json();
+            if(data.code === 1000) { alert("🎉 测试消息发送成功！请查看微信是否收到。"); } 
+            else { alert("❌ 微信拒收，服务器返回信息：" + data.msg + "\n请检查 UID 是否正确，或是否已关注公众号。"); }
+        } catch (e) { alert("❌ 发送失败！网络请求被拦截，请检查是否使用了广告拦截器，或者尝试切换网络。具体报错：" + e.message); }
     }
 
-    function sendWxPush(uid, message) {
+    async function sendWxPush(uid, message) {
         if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
-        
-        // 使用 GET 接口配合 no-cors，完美绕过前端跨域(CORS)拦截限制
-        const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(message)}`;
-        fetch(url, { method: 'GET', mode: 'no-cors' }).catch(e => console.warn("后台推送可能失败", e));
+        try {
+            await fetch('https://wxpusher.zjiecode.com/api/send/message', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] })
+            });
+        } catch (e) { console.error("微信推送后台网络异常:", e); }
     }
 
     // ================= 悬浮窗拖拽与倒计时引擎 =================
@@ -974,14 +994,20 @@
                 addNotificationToStudent(s.id, notifMsg); actionCount++;
             }
         });
-        if(actionCount === 0) return; saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
+        if(actionCount === 0) return; 
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功为 ${actionCount} 名学生布置了独立作业：${hwTitle}`);
+        saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
-    // ================= 补录打卡 =================
+    // ================= 补录打卡/作业 融合版 =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('pub-student-list').innerHTML = ''; document.getElementById('pub-start').value = ''; document.getElementById('pub-end').value = ''; document.getElementById('pub-feedback').value = ''; document.getElementById('publish-hw-modal').style.display = 'flex';
+        document.getElementById('pub-student-list').innerHTML = ''; 
+        document.getElementById('pub-start').value = ''; document.getElementById('pub-end').value = ''; document.getElementById('pub-feedback').value = ''; 
+        // 重置新增的作业部分
+        document.getElementById('pub-hw-title').value = ''; document.getElementById('pub-hw-content').value = ''; document.getElementById('pub-hw-requires-submit').checked = true;
+        document.getElementById('publish-hw-modal').style.display = 'flex';
     }
     function renderPubStudentCheckboxes(className) {
         let stList = students.filter(s => s.className === className && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username));
@@ -991,45 +1017,77 @@
     function publishClassHomework() {
         const cls = document.getElementById('pub-class-select').value; if(!cls) return alert("请先选择班级");
         const st = document.getElementById('pub-start').value, ed = document.getElementById('pub-end').value, fb = document.getElementById('pub-feedback').value.trim();
-        if(!st && !ed && !fb) return alert("⚠️ 起止时间和评语不能同时为空！如果您只是想写评语，请在评语框输入内容。");
+        const hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim(), reqSubmit = document.getElementById('pub-hw-requires-submit').checked;
+        
+        if(!st && !ed && !fb && !hwTitle) return alert("⚠️ 请至少填写【课堂纪实】或【课后作业】中的一项！两者皆空将无法保存。");
+        
         let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
-        let actionCount = 0;
+        let actionCount = 0; let hwCount = 0;
+        
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
             if(s) {
-                if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
-                else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
-                addNotificationToStudent(s.id, `老师发布了课程 [${s.className}] 的打卡与反馈，请及时登录系统查看！`);
-                actionCount++;
+                let notified = false;
+                
+                // 1. 处理打卡
+                if(st || ed || fb) {
+                    if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
+                    else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
+                    addNotificationToStudent(s.id, `老师发布了课程 [${s.className}] 的打卡与反馈，请及时登录系统查看！`);
+                    notified = true;
+                    actionCount++;
+                }
+                
+                // 2. 处理作业
+                if(hwTitle) {
+                    let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                    let fullContent = (st && ed) ? `【关联课节: ${st.replace('T', ' ')}】\n${hwContent}` : hwContent;
+                    s.assignments.unshift({ id: newHwId, title: hwTitle, content: fullContent, status: "pending", submitContent: "", submitHistory: [], accuracy: "待批改", points: 0, comment: "未评价", requiresSubmit: reqSubmit });
+                    
+                    if(!notified) { // 防止同时发两条只发作业这一条即可，因为打卡已经发过了
+                        let hwMsg = reqSubmit ? `老师发布了新作业: <b>${hwTitle}</b>，请及时在线上提交！` : `老师发布了线下作业: <b>${hwTitle}</b>，本作业无需在线提交。`;
+                        addNotificationToStudent(s.id, hwMsg);
+                    }
+                    hwCount++;
+                }
             }
         });
-        if(actionCount === 0) return; saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
+        if(actionCount === 0 && hwCount === 0) return; 
+        
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功处理勾选学生的任务：记录打卡 ${actionCount} 人次，布置作业 ${hwCount} 人次。`);
+        saveData(); closeModal('publish-hw-modal'); alert(`成功处理完毕！\n录入打卡记录: ${actionCount}人次\n布置课后作业: ${hwCount}人次`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 实时课堂秒表 =================
+    // ================= 圆形实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null; let activeLiveClass = ''; let activeLiveStudentIds = [];
+    
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
+    
     function openLiveClassSetup() {
         let sel = document.getElementById('live-class-select');
         if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join(''); } 
         else { let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join(''); }
         document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级/课程</span>'; document.getElementById('live-setup-modal').style.display = 'flex';
     }
+    
     function renderLiveStudentCheckboxes(targetVal) {
         if(!targetVal) return; let stList = [];
         if(targetVal.startsWith('class_')) { let clsName = targetVal.replace('class_', ''); activeLiveClass = `${clsName}`; stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username)); } 
         else if(targetVal.startsWith('studentrecord_')) { let recordId = targetVal.replace('studentrecord_', ''); let targetS = students.find(s => s.id == recordId); if(targetS) { activeLiveClass = `${targetS.name}`; stList = [targetS]; } }
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join(''); document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
     }
+
     function startLiveClass() {
         let selectEl = document.getElementById('live-class-select'); let cbs = document.querySelectorAll('.live-student-cb:checked');
         if(!selectEl.value) return alert("请先选择班级或课程！"); if(cbs.length === 0) return alert("请至少确认一名考勤学生");
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value); closeModal('live-setup-modal'); 
+        
         liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval); 
         document.getElementById('circle-time').innerText = "00:00"; document.getElementById('circle-status').innerText = "上课中";
         let circleEl = document.getElementById('floating-circle-timer'); circleEl.classList.remove('paused'); circleEl.style.display = 'flex';
         liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000);
     }
+
     function toggleLiveTimer() {
         let circleEl = document.getElementById('floating-circle-timer');
         if(liveStatus === 'running') { 
@@ -1039,15 +1097,18 @@
             liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000); 
         }
     }
+
     function promptEndLiveClass() {
         if(confirm("确定要结束本节课并进行结算吗？")) {
             clearInterval(liveInterval); liveStatus = 'idle'; document.getElementById('floating-circle-timer').style.display = 'none';
             let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间):", ""); if(summary === null) summary = ""; 
             let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
             activeLiveStudentIds.forEach(id => { let s = students.find(x => x.id == id); if(s) { s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false }); addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`); } });
+            notifyTeacherByWx(currentUser.username, `✅ 您已成功完成 [${activeLiveClass}] 的下课结算！共有效上课 ${formatTime(liveSeconds)}。`);
             saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
         }
     }
+
     let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null; const circleEl = document.getElementById('floating-circle-timer');
     function circleStart(e) {
         if(e.type === 'mousedown' && e.button !== 0) return; e.preventDefault(); cMoved = false; circleEl.classList.add('pressing');
