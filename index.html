@@ -6,7 +6,7 @@
     <title>予行学生管理系统 Yuxing.student.management</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 引入 Uploadcare 上传组件 (已绑定专属 Public Key) -->
+    <!-- 引入 Uploadcare 上传组件 -->
     <script>
         UPLOADCARE_PUBLIC_KEY = '6d82791e5327dd2c3eb8'; 
         UPLOADCARE_LOCALE = 'zh'; 
@@ -77,6 +77,10 @@
         button.btn-orange:hover { box-shadow: 0 4px 12px rgba(245,99,0,0.3); }
         button.btn-purple { background: #5e5ce6; }
 
+        .btn-long-press { overflow: hidden; user-select: none; -webkit-user-select: none; }
+        .btn-long-press::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.25); width: 0%; transition: width 1.5s linear; pointer-events: none; }
+        .btn-long-press.pressing::after { width: 100%; }
+
         #app-view { display: none; padding: 40px 20px; max-width: 1200px; margin: 0 auto; animation: fadeSlideUp 0.6s var(--ease-apple); }
         .header-bar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;}
         .header-bar h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -1px; }
@@ -134,7 +138,6 @@
 
         .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; margin-top: 16px; }
         
-        /* 严禁选中文本，优化长按体验 */
         .student-pt-card { 
             background: #fff; border: 2px solid transparent; padding: 20px 10px; border-radius: 16px; 
             text-align: center; cursor: pointer; transition: all 0.2s var(--ease-apple); 
@@ -154,7 +157,6 @@
         .flex-row { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
         .section-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 24px 0 12px; letter-spacing: 0.5px; }
         
-        /* 自由拖拽悬浮窗公共样式 */
         .floating-box {
             position: fixed; background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-lg);
@@ -165,13 +167,11 @@
 
         #floating-points-box { top: 100px; right: 20px; width: 340px; }
         
-        /* 全新：倒计时悬浮窗 */
         #floating-countdown-box { top: 20px; left: 50%; transform: translateX(-50%); width: 280px; z-index: 1001; }
         .countdown-display { font-size: 42px; font-weight: 700; text-align: center; color: var(--text-main); font-variant-numeric: tabular-nums; margin: 10px 0; letter-spacing: 2px;}
         .countdown-display.urgent { color: var(--danger-red); animation: pulseUrgent 1s infinite; }
         @keyframes pulseUrgent { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* 全新：圆形上课计时器 */
         .floating-circle {
             position: fixed; bottom: 30px; right: 30px; width: 75px; height: 75px;
             border-radius: 50%; background: var(--accent-green); color: #fff;
@@ -198,6 +198,13 @@
             background: var(--danger-red); color: white; border-radius: 10px; padding: 2px 6px; font-size: 10px; font-weight: bold;
             position: absolute; top: -5px; right: -5px; display: none;
         }
+        
+        .uploadcare--widget__button_type_open {
+            background: var(--accent-blue) !important; color: #fff !important; 
+            border-radius: var(--radius-md) !important; font-family: inherit !important; 
+            font-weight: 500 !important; padding: 10px 18px !important; transition: 0.2s !important;
+        }
+        .uploadcare--widget__button_type_open:hover { filter: brightness(1.05); }
     </style>
 </head>
 <body>
@@ -294,15 +301,13 @@
     </div>
 </div>
 
-<!-- ================= 悬浮组件区 ================= -->
-
-<!-- 1. 全新：圆形上课计时器 -->
+<!-- 圆形上课计时器 -->
 <div id="floating-circle-timer" class="floating-circle" title="单击暂停，长按下课">
     <div id="circle-time">00:00</div>
     <div id="circle-status">上课中</div>
 </div>
 
-<!-- 2. 全新：倒计时悬浮窗 -->
+<!-- 倒计时悬浮窗 -->
 <div id="floating-countdown-box" class="floating-box">
     <div id="countdown-drag-handle" class="drag-handle" title="按住拖动">
         <strong style="font-size:13px; color:var(--accent-blue);">⏲️ 倒计时面板</strong>
@@ -327,7 +332,7 @@
     </div>
 </div>
 
-<!-- 3. 互动计分板悬浮窗 -->
+<!-- 互动计分板悬浮窗 -->
 <div id="floating-points-box" class="floating-box">
     <div id="points-drag-handle" class="drag-handle" title="按住拖动">
         <strong id="floating-classroom-title" style="font-size:13px; color:var(--accent-blue);">✨ 计分板</strong>
@@ -416,7 +421,12 @@
         <div class="modal-body">
             <input type="text" id="setting-username" class="input-elegant" placeholder="新用户名">
             <input type="password" id="setting-password" class="input-elegant" placeholder="新密码">
-            <div style="margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div><input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID"></div>
+            <div style="margin-top:8px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
+                <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
+                <!-- 全新：微信推送专属自测按钮 -->
+                <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1);" onclick="testWxPush()">🔔 点击测试发送一条微信</button>
+            </div>
             <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
             <button class="btn-apple" onclick="changeAccount()">保存修改</button>
         </div>
@@ -485,6 +495,7 @@
     </div>
 </div>
 
+<!-- ================= 学生提交作业模态框 ================= -->
 <div class="modal-overlay" id="submit-hw-modal">
     <div class="modal-container" style="max-width: 500px;">
         <div class="modal-header"><h2>📤 提交作业</h2><button class="close-btn" onclick="closeModal('submit-hw-modal')">&times;</button></div>
@@ -503,6 +514,7 @@
     </div>
 </div>
 
+<!-- ================= 老师批改作业模态框 (包含老师自己的上传框) ================= -->
 <div class="modal-overlay" id="grade-hw-modal">
     <div class="modal-container" style="max-width: 550px;">
         <div class="modal-header"><h2>✍️ 批改作业</h2><button class="close-btn" onclick="closeModal('grade-hw-modal')">&times;</button></div>
@@ -515,12 +527,15 @@
                 <input type="text" id="grade-accuracy" class="input-elegant" style="flex:1; margin:0;" placeholder="正确率/等级 (如 90% 或 A+)">
                 <input type="number" id="grade-points" class="input-elegant" style="flex:1; margin:0;" placeholder="本次加分 (选填)">
             </div>
+            
             <div style="text-align: center; margin-top: 16px; margin-bottom: 8px; background:rgba(52,199,89,0.03); border:1px dashed var(--accent-green); padding:12px; border-radius:12px;">
                 <input type="hidden" role="uploadcare-uploader" id="grade-file-uploader" />
                 <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">↑ 老师可在此上传批改后的照片或参考答案 (支持全格式)</div>
             </div>
+
             <textarea id="grade-comment" class="input-elegant" style="margin-top:8px; min-height:80px;" placeholder="在此输入评价反馈，上方附件链接会自动填入..."></textarea>
             <input type="hidden" id="grade-hw-id">
+            
             <div style="display:flex; gap:12px; margin-top:8px;">
                 <button class="btn-apple btn-green" style="flex:2;" onclick="executeGradeHw()">通过并打分</button>
                 <button class="btn-apple" style="flex:1; background:var(--danger-red);" onclick="executeReturnHw()">打回重做</button>
@@ -541,24 +556,96 @@
 
     let staffAccounts = { 'admin': { password: 'admin123', role: 'admin', name: '超级管理员', recoveryKey: 'YUXING2026', notifications: [] } };
     let students = []; let classGroups = [];
-    let currentUser = null, currentStudentId = null;
+    let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
     // View State
     window.teacherViewingClass = null;
 
-    // =============== 通用拖拽挂载 ===============
+    window.addEventListener('load', function() {
+        const uploaderWidget = uploadcare.Widget('#hw-file-uploader');
+        uploaderWidget.onUploadComplete(function(info) {
+            const textA = document.getElementById('submit-hw-text');
+            const appendText = `📎 [学生附件: ${info.name}]\n点击查阅: ${info.cdnUrl}\n`;
+            textA.value = textA.value ? textA.value + '\n' + appendText : appendText;
+            alert("✅ 上传成功！链接已自动填入下方输入框。"); uploaderWidget.value(null);
+        });
+
+        const gradeWidget = uploadcare.Widget('#grade-file-uploader');
+        gradeWidget.onUploadComplete(function(info) {
+            const textA = document.getElementById('grade-comment');
+            const appendText = `📎 [老师附件: ${info.name}]\n点击查阅: ${info.cdnUrl}\n`;
+            textA.value = textA.value ? textA.value + '\n' + appendText : appendText;
+            alert("✅ 批改附件上传成功！链接已自动填入评价框中。"); gradeWidget.value(null);
+        });
+    });
+
+    function formatContent(text) {
+        if (!text) return ''; const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let html = text.replace(urlRegex, '<a href="$1" target="_blank" style="color:var(--accent-blue); text-decoration:underline; font-weight:bold;">$1 (点击查阅)</a>');
+        return html.replace(/\n/g, '<br>');
+    }
+
+    // ================= 微信推送自测与接口修复 =================
+    async function testWxPush() {
+        const uid = document.getElementById('setting-wx-uid').value.trim();
+        if(!uid) return alert("❌ 请先在上方填写你的 UID！");
+        if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
+        
+        try {
+            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: "✅ 恭喜！你的予行系统微信推送配置成功！", contentType: 1, uids: [uid] })
+            });
+            let data = await res.json();
+            if(data.code === 1000) {
+                alert("🎉 测试消息已成功发送！请立刻看一眼手机微信有没有收到。");
+            } else {
+                alert("❌ 微信拒收了，原因：" + data.msg + "\n(可能是你的账号尚未关注公众号，或者 UID 填错了)");
+            }
+        } catch (e) {
+            alert("❌ 网络被拦截，无法连接到微信服务器。请检查您的浏览器是否开启了严格的广告拦截插件 (AdBlocker)。错误：" + e.message);
+        }
+    }
+
+    async function sendWxPush(uid, message) {
+        if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
+        try {
+            await fetch('https://wxpusher.zjiecode.com/api/send/message', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] })
+            });
+        } catch (e) { console.warn("后台推送因网络插件拦截失败"); }
+    }
+
+    // ================= 悬浮窗拖拽与倒计时引擎 =================
     function makeDraggable(elmnt, handleId) {
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; var handle = document.getElementById(handleId);
         if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
-        function dragMouseDown(e) { e = e || window.event; if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-        function dragTouchStart(e) { if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
+        function dragMouseDown(e) { e = e || window.event; if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN' || e.target.tagName === 'INPUT') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+        function dragTouchStart(e) { if(e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN' || e.target.tagName === 'INPUT') return; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
         function elementDrag(e) { e = e || window.event; e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto'; }
         function elementTouchDrag(e) { pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto'; }
         function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
     }
 
-    // =============== 初始化引擎 ===============
+    let cdInterval = null; let cdRemaining = 0;
+    function openCountdownSetup() { document.getElementById('floating-countdown-box').style.display = 'block'; document.getElementById('countdown-setup-area').style.display = 'block'; document.getElementById('countdown-running-area').style.display = 'none'; document.getElementById('custom-cd-min').value = ''; }
+    function closeCountdownBox() { document.getElementById('floating-countdown-box').style.display = 'none'; }
+    function startCustomCountdown() { let mins = parseInt(document.getElementById('custom-cd-min').value); if(!mins || mins <= 0) return alert("请输入有效的分钟数"); startCountdown(mins * 60); }
+    function startCountdown(seconds) {
+        clearInterval(cdInterval); cdRemaining = seconds; updateCdDisplay();
+        document.getElementById('countdown-setup-area').style.display = 'none'; document.getElementById('countdown-running-area').style.display = 'block'; document.getElementById('cd-pause-btn').innerText = "⏸️ 暂停";
+        cdInterval = setInterval(() => { cdRemaining--; updateCdDisplay(); if(cdRemaining <= 0) { clearInterval(cdInterval); alert("⏰ 倒计时结束！"); resetCountdown(); } }, 1000);
+    }
+    function toggleCountdown() {
+        let btn = document.getElementById('cd-pause-btn');
+        if(btn.innerText.includes("暂停")) { clearInterval(cdInterval); btn.innerText = "▶️ 继续"; } 
+        else { btn.innerText = "⏸️ 暂停"; cdInterval = setInterval(() => { cdRemaining--; updateCdDisplay(); if(cdRemaining <= 0) { clearInterval(cdInterval); alert("⏰ 倒计时结束！"); resetCountdown(); } }, 1000); }
+    }
+    function resetCountdown() { clearInterval(cdInterval); document.getElementById('countdown-setup-area').style.display = 'block'; document.getElementById('countdown-running-area').style.display = 'none'; }
+    function updateCdDisplay() { let m = Math.floor(cdRemaining / 60); let s = cdRemaining % 60; let disp = document.getElementById('cd-display'); disp.innerText = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; if(cdRemaining <= 10 && cdRemaining > 0) { disp.classList.add('urgent'); } else { disp.classList.remove('urgent'); } }
+
     window.onload = async function() {
         const loginBtn = document.getElementById('login-btn'); loginBtn.innerText = '正在连接云端...'; loginBtn.disabled = true;
         try {
@@ -583,7 +670,6 @@
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
         if(s && s.user && (Date.now() - s.lastActive < 14400000)) { currentUser = s.user; s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v11', JSON.stringify(s)); loginSuccess(true); }
         
-        // 挂载老悬浮窗拖拽
         makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
         makeDraggable(document.getElementById('floating-countdown-box'), 'countdown-drag-handle');
     };
@@ -616,9 +702,7 @@
             if(document.getElementById('finance-modal').style.display === 'flex') { openFinanceDashboard(); }
             if(currentUser && currentUser.role === 'admin') { renderAdminDashboard(); }
             updateBadge(); 
-        }).catch(err => { 
-            if(statusEl) { statusEl.innerText = '⚠️ 网络异常，存至本地'; setTimeout(() => statusEl.classList.remove('show'), 4000); } 
-        });
+        }).catch(err => { if(statusEl) { statusEl.innerText = '⚠️ 网络异常，存至本地'; setTimeout(() => statusEl.classList.remove('show'), 4000); } });
     }
 
     let activityTimeout = null;
@@ -660,77 +744,6 @@
         } else if (currentUser.role === 'teacher') { document.querySelectorAll('.manage-only, .can-interact').forEach(el => el.style.display = 'inline-block'); } 
         else if (currentUser.role === 'student') { document.querySelectorAll('.can-interact').forEach(el => el.style.display = 'inline-block'); }
     }
-
-    // ================= 全局倒计时悬浮窗引擎 =================
-    let cdInterval = null;
-    let cdRemaining = 0;
-    
-    function openCountdownSetup() {
-        document.getElementById('floating-countdown-box').style.display = 'block';
-        document.getElementById('countdown-setup-area').style.display = 'block';
-        document.getElementById('countdown-running-area').style.display = 'none';
-        document.getElementById('custom-cd-min').value = '';
-    }
-    
-    function closeCountdownBox() {
-        document.getElementById('floating-countdown-box').style.display = 'none';
-    }
-
-    function startCustomCountdown() {
-        let mins = parseInt(document.getElementById('custom-cd-min').value);
-        if(!mins || mins <= 0) return alert("请输入有效的分钟数");
-        startCountdown(mins * 60);
-    }
-
-    function startCountdown(seconds) {
-        clearInterval(cdInterval);
-        cdRemaining = seconds;
-        updateCdDisplay();
-        document.getElementById('countdown-setup-area').style.display = 'none';
-        document.getElementById('countdown-running-area').style.display = 'block';
-        document.getElementById('cd-pause-btn').innerText = "⏸️ 暂停";
-        
-        cdInterval = setInterval(() => {
-            cdRemaining--;
-            updateCdDisplay();
-            if(cdRemaining <= 0) {
-                clearInterval(cdInterval);
-                alert("⏰ 倒计时结束！");
-                resetCountdown();
-            }
-        }, 1000);
-    }
-
-    function toggleCountdown() {
-        let btn = document.getElementById('cd-pause-btn');
-        if(btn.innerText.includes("暂停")) {
-            clearInterval(cdInterval);
-            btn.innerText = "▶️ 继续";
-        } else {
-            btn.innerText = "⏸️ 暂停";
-            cdInterval = setInterval(() => {
-                cdRemaining--;
-                updateCdDisplay();
-                if(cdRemaining <= 0) { clearInterval(cdInterval); alert("⏰ 倒计时结束！"); resetCountdown(); }
-            }, 1000);
-        }
-    }
-
-    function resetCountdown() {
-        clearInterval(cdInterval);
-        document.getElementById('countdown-setup-area').style.display = 'block';
-        document.getElementById('countdown-running-area').style.display = 'none';
-    }
-
-    function updateCdDisplay() {
-        let m = Math.floor(cdRemaining / 60);
-        let s = cdRemaining % 60;
-        let disp = document.getElementById('cd-display');
-        disp.innerText = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-        if(cdRemaining <= 10 && cdRemaining > 0) { disp.classList.add('urgent'); } 
-        else { disp.classList.remove('urgent'); }
-    }
-
 
     // ================= 消息与通知中心 =================
     function ensureNotificationsInit() {
@@ -876,24 +889,37 @@
 
         if (currentUser.role === 'admin') {
             let myCls = classGroups; let currentFilter = filterSelect.value; let fOpts = '<option value="">全班级 / 显示全部</option>';
-            myCls.forEach(c => { fOpts += `<option value="${c.name}" ${currentFilter === c.name ? 'selected' : ''}>${c.name}</option>`; }); filterSelect.innerHTML = fOpts; 
+            myCls.forEach(c => { fOpts += `<option value="${c.name}" ${currentFilter === c.name ? 'selected' : ''}>${c.name}</option>`; });
+            filterSelect.innerHTML = fOpts; filterSelect.style.display = 'inline-block';
             if (currentFilter) { list = list.filter(s => s.className === currentFilter); }
         } else if (currentUser.role === 'teacher') {
             if (window.teacherViewingClass) { list = list.filter(s => s.className === window.teacherViewingClass); }
         }
+
         if (nameSearchInput) { list = list.filter(s => s.name.toLowerCase().includes(nameSearchInput)); }
 
-        let groupedMap = {};
-        list.forEach(s => {
-            let key = s.username || s.id; if(!groupedMap[key]) { groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 }; }
-            groupedMap[key].courses.push({ id: s.id, className: s.className || '未分配' }); groupedMap[key].teachers.add(getTeacherName(s.teacherUsername)); groupedMap[key].totalPts += (s.totalPoints || 0);
-        });
+        if (currentUser.role === 'student') {
+            list.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${s.id})">${s.name}</span></td><td><span class="badge class" onclick="openStudentDetailById(${s.id})">${s.className || '未分配'}</span></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${getTeacherName(s.teacherUsername)}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${s.totalPoints || 0}</td><td><span style="color:var(--text-muted); font-size:12px;">查阅详情</span></td>`;
+                tbody.appendChild(tr);
+            });
+        } else {
+            let groupedMap = {};
+            list.forEach(s => {
+                let key = s.username || s.id;
+                if(!groupedMap[key]) { groupedMap[key] = { name: s.name, courses: [], teachers: new Set(), totalPts: 0 }; }
+                groupedMap[key].courses.push({ id: s.id, className: s.className || '未分配' });
+                groupedMap[key].teachers.add(getTeacherName(s.teacherUsername)); groupedMap[key].totalPts += (s.totalPoints || 0);
+            });
 
-        for(let key in groupedMap) {
-            let g = groupedMap[key]; let courseBadges = g.courses.map(co => `<span class="badge class" onclick="openStudentDetailById(${co.id})" title="点击管理该课程">${co.className}</span>`).join(' ');
-            let teachersStr = [...g.teachers].join(', '); let primaryId = g.courses[0].id; const tr = document.createElement('tr');
-            let actionHtml = `<div class="action-btns"><button class="btn-mini blue" onclick="openStudentDetailById(${primaryId})">管理档案</button><button class="btn-mini red" onclick="deleteStudentGroup('${key}')">移除</button></div>`;
-            tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${primaryId})">${g.name}</span></td><td><div>${courseBadges}</div></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${teachersStr}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${g.totalPts}</td><td>${actionHtml}</td>`; tbody.appendChild(tr);
+            for(let key in groupedMap) {
+                let g = groupedMap[key]; let courseBadges = g.courses.map(co => `<span class="badge class" onclick="openStudentDetailById(${co.id})" title="点击管理该课程">${co.className}</span>`).join(' ');
+                let teachersStr = [...g.teachers].join(', '); let primaryId = g.courses[0].id; const tr = document.createElement('tr');
+                let actionHtml = `<div class="action-btns"><button class="btn-mini blue" onclick="openStudentDetailById(${primaryId})">管理档案</button><button class="btn-mini red" onclick="deleteStudentGroup('${key}')">移除</button></div>`;
+                tr.innerHTML = `<td><span class="click-name" onclick="openStudentDetailById(${primaryId})">${g.name}</span></td><td><div>${courseBadges}</div></td><td style="font-size:13px; color:var(--text-muted);">👨‍🏫 ${teachersStr}</td><td style="font-weight:600; color:var(--accent-orange);">✨ ${g.totalPts}</td><td>${actionHtml}</td>`;
+                tbody.appendChild(tr);
+            }
         }
     }
 
@@ -1000,7 +1026,7 @@
         if(actionCount === 0) return; saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 全新：圆形实时课堂秒表 =================
+    // ================= 圆形实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null; let activeLiveClass = ''; let activeLiveStudentIds = [];
     
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
@@ -1025,37 +1051,24 @@
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value); closeModal('live-setup-modal'); 
         
         liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval); 
-        document.getElementById('circle-time').innerText = "00:00";
-        document.getElementById('circle-status').innerText = "上课中";
-        
-        let circleEl = document.getElementById('floating-circle-timer');
-        circleEl.classList.remove('paused');
-        circleEl.style.display = 'flex';
-        
-        liveInterval = setInterval(() => { 
-            liveSeconds++; 
-            document.getElementById('circle-time').innerText = formatTime(liveSeconds); 
-        }, 1000);
+        document.getElementById('circle-time').innerText = "00:00"; document.getElementById('circle-status').innerText = "上课中";
+        let circleEl = document.getElementById('floating-circle-timer'); circleEl.classList.remove('paused'); circleEl.style.display = 'flex';
+        liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000);
     }
 
     function toggleLiveTimer() {
         let circleEl = document.getElementById('floating-circle-timer');
         if(liveStatus === 'running') { 
-            liveStatus = 'paused'; clearInterval(liveInterval); 
-            circleEl.classList.add('paused');
-            document.getElementById('circle-status').innerText = "已暂停"; 
+            liveStatus = 'paused'; clearInterval(liveInterval); circleEl.classList.add('paused'); document.getElementById('circle-status').innerText = "已暂停"; 
         } else if(liveStatus === 'paused') { 
-            liveStatus = 'running'; 
-            circleEl.classList.remove('paused');
-            document.getElementById('circle-status').innerText = "上课中";
+            liveStatus = 'running'; circleEl.classList.remove('paused'); document.getElementById('circle-status').innerText = "上课中";
             liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000); 
         }
     }
 
     function promptEndLiveClass() {
         if(confirm("确定要结束本节课并进行结算吗？")) {
-            clearInterval(liveInterval); liveStatus = 'idle'; 
-            document.getElementById('floating-circle-timer').style.display = 'none';
+            clearInterval(liveInterval); liveStatus = 'idle'; document.getElementById('floating-circle-timer').style.display = 'none';
             let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间):", ""); if(summary === null) summary = ""; 
             let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
             activeLiveStudentIds.forEach(id => { let s = students.find(x => x.id == id); if(s) { s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false }); addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`); } });
@@ -1063,40 +1076,26 @@
         }
     }
 
-    // 圆形秒表的交互逻辑 (区分拖拽、点击暂停、长按结束)
-    let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null;
-    const circleEl = document.getElementById('floating-circle-timer');
-    
+    let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null; const circleEl = document.getElementById('floating-circle-timer');
     function circleStart(e) {
         if(e.type === 'mousedown' && e.button !== 0) return;
         e.preventDefault(); cMoved = false; circleEl.classList.add('pressing');
         cPos3 = e.clientX || e.touches[0].clientX; cPos4 = e.clientY || e.touches[0].clientY;
-        
-        cLongPressTimer = setTimeout(() => {
-            if(!cMoved) { circleEl.classList.remove('pressing'); promptEndLiveClass(); }
-        }, 1000);
-
-        document.onmouseup = circleEnd; document.onmousemove = circleMove;
-        document.ontouchend = circleEnd; document.ontouchmove = circleMove;
+        cLongPressTimer = setTimeout(() => { if(!cMoved) { circleEl.classList.remove('pressing'); promptEndLiveClass(); } }, 1000);
+        document.onmouseup = circleEnd; document.onmousemove = circleMove; document.ontouchend = circleEnd; document.ontouchmove = circleMove;
     }
     function circleMove(e) {
         let cx = e.clientX || e.touches[0].clientX; let cy = e.clientY || e.touches[0].clientY;
         if(Math.max(Math.abs(cx - cPos3), Math.abs(cy - cPos4)) > 10) {
-            cMoved = true; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer);
-            e.preventDefault();
+            cMoved = true; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); e.preventDefault();
             cPos1 = cPos3 - cx; cPos2 = cPos4 - cy; cPos3 = cx; cPos4 = cy;
-            circleEl.style.top = (circleEl.offsetTop - cPos2) + "px"; circleEl.style.left = (circleEl.offsetLeft - cPos1) + "px";
-            circleEl.style.bottom = 'auto'; circleEl.style.right = 'auto';
+            circleEl.style.top = (circleEl.offsetTop - cPos2) + "px"; circleEl.style.left = (circleEl.offsetLeft - cPos1) + "px"; circleEl.style.bottom = 'auto'; circleEl.style.right = 'auto';
         }
     }
-    function circleEnd(e) {
-        document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
-        circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer);
-        if(!cMoved) { toggleLiveTimer(); }
-    }
+    function circleEnd(e) { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); if(!cMoved) { toggleLiveTimer(); } }
     circleEl.onmousedown = circleStart; circleEl.ontouchstart = circleStart;
 
-    // ================= 互动加分引擎 (全新长按连发) =================
+    // ================= 互动加分引擎 =================
     function openClassSelectModal() {
         let html = '';
         if (currentUser.role === 'student') {
@@ -1131,25 +1130,17 @@
         if(e.type === 'mousedown' && e.button !== 0) return;
         ptIsLongPress = false; ptIsDragging = false;
         let startY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        const handleMove = (moveEvent) => {
-            let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-            if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); }
-        };
+        const handleMove = (moveEvent) => { let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY; if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); } };
         document.addEventListener('touchmove', handleMove, {passive: true}); document.addEventListener('mousemove', handleMove);
         e.target.cleanupMove = () => { document.removeEventListener('touchmove', handleMove); document.removeEventListener('mousemove', handleMove); };
 
         ptPressTimer = setTimeout(() => {
             if(ptIsDragging) return;
             ptIsLongPress = true; executePointChange(id, -1);
-            ptInterval = setInterval(() => executePointChange(id, -1), 200); // 连发扣分速度
-        }, 300); // 长按0.3秒触发
+            ptInterval = setInterval(() => executePointChange(id, -1), 200); 
+        }, 300); 
     }
-    function ptPressEnd(e, id) {
-        clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove();
-        if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } // 短按加分
-        ptIsLongPress = false;
-    }
+    function ptPressEnd(e, id) { clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } ptIsLongPress = false; }
     function ptPressCancel(e, id) { clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); ptIsLongPress = false; }
 
     function executePointChange(id, delta) {
