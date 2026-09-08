@@ -6,7 +6,6 @@
     <title>予行学生管理系统 Yuxing.student.management</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 引入 Uploadcare 上传组件 -->
     <script>
         UPLOADCARE_PUBLIC_KEY = '6d82791e5327dd2c3eb8'; 
         UPLOADCARE_LOCALE = 'zh'; 
@@ -15,7 +14,6 @@
     <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 
     <style>
-        /* Apple-Inspired Design System */
         :root {
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e8ecf2 100%);
             --glass-bg: rgba(255, 255, 255, 0.75);
@@ -76,10 +74,6 @@
         button.btn-orange { background: var(--accent-orange); }
         button.btn-orange:hover { box-shadow: 0 4px 12px rgba(245,99,0,0.3); }
         button.btn-purple { background: #5e5ce6; }
-
-        .btn-long-press { overflow: hidden; user-select: none; -webkit-user-select: none; }
-        .btn-long-press::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.25); width: 0%; transition: width 1.5s linear; pointer-events: none; }
-        .btn-long-press.pressing::after { width: 100%; }
 
         #app-view { display: none; padding: 40px 20px; max-width: 1200px; margin: 0 auto; animation: fadeSlideUp 0.6s var(--ease-apple); }
         .header-bar { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;}
@@ -424,7 +418,6 @@
             <div style="margin-top:8px;">
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
                 <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
-                <!-- 全新：微信推送专属自测按钮 -->
                 <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1);" onclick="testWxPush()">🔔 点击测试发送一条微信</button>
             </div>
             <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
@@ -495,7 +488,6 @@
     </div>
 </div>
 
-<!-- ================= 学生提交作业模态框 ================= -->
 <div class="modal-overlay" id="submit-hw-modal">
     <div class="modal-container" style="max-width: 500px;">
         <div class="modal-header"><h2>📤 提交作业</h2><button class="close-btn" onclick="closeModal('submit-hw-modal')">&times;</button></div>
@@ -514,7 +506,6 @@
     </div>
 </div>
 
-<!-- ================= 老师批改作业模态框 (包含老师自己的上传框) ================= -->
 <div class="modal-overlay" id="grade-hw-modal">
     <div class="modal-container" style="max-width: 550px;">
         <div class="modal-header"><h2>✍️ 批改作业</h2><button class="close-btn" onclick="closeModal('grade-hw-modal')">&times;</button></div>
@@ -527,15 +518,12 @@
                 <input type="text" id="grade-accuracy" class="input-elegant" style="flex:1; margin:0;" placeholder="正确率/等级 (如 90% 或 A+)">
                 <input type="number" id="grade-points" class="input-elegant" style="flex:1; margin:0;" placeholder="本次加分 (选填)">
             </div>
-            
             <div style="text-align: center; margin-top: 16px; margin-bottom: 8px; background:rgba(52,199,89,0.03); border:1px dashed var(--accent-green); padding:12px; border-radius:12px;">
                 <input type="hidden" role="uploadcare-uploader" id="grade-file-uploader" />
                 <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">↑ 老师可在此上传批改后的照片或参考答案 (支持全格式)</div>
             </div>
-
             <textarea id="grade-comment" class="input-elegant" style="margin-top:8px; min-height:80px;" placeholder="在此输入评价反馈，上方附件链接会自动填入..."></textarea>
             <input type="hidden" id="grade-hw-id">
-            
             <div style="display:flex; gap:12px; margin-top:8px;">
                 <button class="btn-apple btn-green" style="flex:2;" onclick="executeGradeHw()">通过并打分</button>
                 <button class="btn-apple" style="flex:1; background:var(--danger-red);" onclick="executeReturnHw()">打回重做</button>
@@ -559,7 +547,6 @@
     let currentUser = null, currentStudentId = null, tempClassPoints = {}; 
     let chartMonthly = null, chartStudents = null;
 
-    // View State
     window.teacherViewingClass = null;
 
     window.addEventListener('load', function() {
@@ -586,39 +573,31 @@
         return html.replace(/\n/g, '<br>');
     }
 
-    // ================= 微信推送自测与接口修复 =================
     async function testWxPush() {
         const uid = document.getElementById('setting-wx-uid').value.trim();
         if(!uid) return alert("❌ 请先在上方填写你的 UID！");
         if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
-        
         try {
-            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: "✅ 恭喜！你的予行系统微信推送配置成功！", contentType: 1, uids: [uid] })
-            });
+            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: "✅ 恭喜！你的予行系统微信推送配置成功！", contentType: 1, uids: [uid] }) });
             let data = await res.json();
-            if(data.code === 1000) {
-                alert("🎉 测试消息已成功发送！请立刻看一眼手机微信有没有收到。");
-            } else {
-                alert("❌ 微信拒收了，原因：" + data.msg + "\n(可能是你的账号尚未关注公众号，或者 UID 填错了)");
-            }
-        } catch (e) {
-            alert("❌ 网络被拦截，无法连接到微信服务器。请检查您的浏览器是否开启了严格的广告拦截插件 (AdBlocker)。错误：" + e.message);
-        }
+            if(data.code === 1000) { alert("🎉 测试消息已成功发送！请立刻看一眼手机微信有没有收到。"); } 
+            else { alert("❌ 微信拒收了，原因：" + data.msg + "\n(可能是你的账号尚未关注公众号，或者 UID 填错了)"); }
+        } catch (e) { alert("❌ 网络被拦截，无法连接到微信服务器。请检查您的浏览器是否开启了严格的广告拦截插件。错误：" + e.message); }
     }
 
     async function sendWxPush(uid, message) {
         if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
+        const payload = { appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] };
         try {
-            await fetch('https://wxpusher.zjiecode.com/api/send/message', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] })
-            });
-        } catch (e) { console.warn("后台推送因网络插件拦截失败"); }
+            let res = await fetch('https://wxpusher.zjiecode.com/api/send/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            let resJson = await res.json();
+            if(resJson.code !== 1000) console.warn("微信推送失败:", resJson.msg);
+        } catch (e) {
+            try { await fetch('https://corsproxy.io/?' + encodeURIComponent('https://wxpusher.zjiecode.com/api/send/message'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } 
+            catch (err) { console.error("双通道推送均失败"); }
+        }
     }
 
-    // ================= 悬浮窗拖拽与倒计时引擎 =================
     function makeDraggable(elmnt, handleId) {
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; var handle = document.getElementById(handleId);
         if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
@@ -745,7 +724,6 @@
         else if (currentUser.role === 'student') { document.querySelectorAll('.can-interact').forEach(el => el.style.display = 'inline-block'); }
     }
 
-    // ================= 消息与通知中心 =================
     function ensureNotificationsInit() {
         students.forEach(s => { if(!s.notifications) s.notifications = []; });
         for(let key in staffAccounts) { if(!staffAccounts[key].notifications) staffAccounts[key].notifications = []; }
@@ -829,7 +807,6 @@
     function markNotifRead(notifId, sId) { let s = students.find(x => x.id == sId); if(s) { let n = s.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } } }
     function markTeacherNotifRead(notifId) { let t = staffAccounts[currentUser.username]; if(t && t.notifications) { let n = t.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } } }
 
-    // ================= 核心渲染引擎 (卡片式) =================
     function renderAdminDashboard() {
         let totalGenerated = 0, totalPaid = 0, totalUnpaid = 0;
         students.forEach(s => {
@@ -991,11 +968,17 @@
             if(s) {
                 let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
                 s.assignments.unshift({ id: newHwId, title: hwTitle, content: fullContent, status: "pending", submitContent: "", submitHistory: [], accuracy: "待批改", points: 0, comment: "未评价", requiresSubmit: reqSubmit });
+                
+                // 【已修复微信推送】
                 let notifMsg = reqSubmit ? `老师发布了新作业: <b>${hwTitle}</b>，请及时在线上提交！` : `老师发布了线下作业: <b>${hwTitle}</b>，本作业无需在线提交，请直接将纸质版交给老师。`;
                 addNotificationToStudent(s.id, notifMsg); actionCount++;
             }
         });
-        if(actionCount === 0) return; saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
+        if(actionCount === 0) return; 
+        
+        // 【已修复微信推送】
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功为 ${actionCount} 名学生布置了独立作业：${hwTitle}`);
+        saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
     // ================= 补录打卡 =================
@@ -1020,10 +1003,17 @@
             if(s) {
                 if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
                 else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
+                
+                // 【已修复微信推送】
+                addNotificationToStudent(s.id, `老师发布了课程 [${s.className}] 的打卡与反馈，请及时登录系统查看！`);
                 actionCount++;
             }
         });
-        if(actionCount === 0) return; saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
+        if(actionCount === 0) return; 
+        
+        // 【已修复微信推送】
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功为 ${actionCount} 名学生录入了打卡/课堂反馈！`);
+        saveData(); closeModal('publish-hw-modal'); alert(`成功补录了 ${cbs.length} 名学生的考勤记录。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
     // ================= 圆形实时课堂秒表 =================
@@ -1051,51 +1041,88 @@
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value); closeModal('live-setup-modal'); 
         
         liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval); 
-        document.getElementById('circle-time').innerText = "00:00"; document.getElementById('circle-status').innerText = "上课中";
-        let circleEl = document.getElementById('floating-circle-timer'); circleEl.classList.remove('paused'); circleEl.style.display = 'flex';
-        liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000);
+        document.getElementById('circle-time').innerText = "00:00";
+        document.getElementById('circle-status').innerText = "上课中";
+        
+        let circleEl = document.getElementById('floating-circle-timer');
+        circleEl.classList.remove('paused');
+        circleEl.style.display = 'flex';
+        
+        liveInterval = setInterval(() => { 
+            liveSeconds++; 
+            document.getElementById('circle-time').innerText = formatTime(liveSeconds); 
+        }, 1000);
     }
 
     function toggleLiveTimer() {
         let circleEl = document.getElementById('floating-circle-timer');
         if(liveStatus === 'running') { 
-            liveStatus = 'paused'; clearInterval(liveInterval); circleEl.classList.add('paused'); document.getElementById('circle-status').innerText = "已暂停"; 
+            liveStatus = 'paused'; clearInterval(liveInterval); 
+            circleEl.classList.add('paused');
+            document.getElementById('circle-status').innerText = "已暂停"; 
         } else if(liveStatus === 'paused') { 
-            liveStatus = 'running'; circleEl.classList.remove('paused'); document.getElementById('circle-status').innerText = "上课中";
+            liveStatus = 'running'; 
+            circleEl.classList.remove('paused');
+            document.getElementById('circle-status').innerText = "上课中";
             liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000); 
         }
     }
 
     function promptEndLiveClass() {
         if(confirm("确定要结束本节课并进行结算吗？")) {
-            clearInterval(liveInterval); liveStatus = 'idle'; document.getElementById('floating-circle-timer').style.display = 'none';
+            clearInterval(liveInterval); liveStatus = 'idle'; 
+            document.getElementById('floating-circle-timer').style.display = 'none';
             let summary = prompt("下课！请输入本节课纪要/知识点 (直接点确定将只计入时间):", ""); if(summary === null) summary = ""; 
             let now = new Date(); let effectiveStart = new Date(now.getTime() - (liveSeconds * 1000)); 
-            activeLiveStudentIds.forEach(id => { let s = students.find(x => x.id == id); if(s) { s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false }); addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`); } });
+            activeLiveStudentIds.forEach(id => { 
+                let s = students.find(x => x.id == id); 
+                if(s) { 
+                    s.attendance.unshift({ startTime: toLocalISOString(effectiveStart), endTime: toLocalISOString(now), content: summary, billed: false }); 
+                    
+                    // 【已修复微信推送】
+                    addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`); 
+                } 
+            });
+            
+            // 【已修复微信推送】
+            notifyTeacherByWx(currentUser.username, `✅ 您已成功完成 [${activeLiveClass}] 的下课结算！共有效上课 ${formatTime(liveSeconds)}。`);
             saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
         }
     }
 
-    let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null; const circleEl = document.getElementById('floating-circle-timer');
+    let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null;
+    const circleEl = document.getElementById('floating-circle-timer');
+    
     function circleStart(e) {
         if(e.type === 'mousedown' && e.button !== 0) return;
         e.preventDefault(); cMoved = false; circleEl.classList.add('pressing');
         cPos3 = e.clientX || e.touches[0].clientX; cPos4 = e.clientY || e.touches[0].clientY;
-        cLongPressTimer = setTimeout(() => { if(!cMoved) { circleEl.classList.remove('pressing'); promptEndLiveClass(); } }, 1000);
-        document.onmouseup = circleEnd; document.onmousemove = circleMove; document.ontouchend = circleEnd; document.ontouchmove = circleMove;
+        
+        cLongPressTimer = setTimeout(() => {
+            if(!cMoved) { circleEl.classList.remove('pressing'); promptEndLiveClass(); }
+        }, 1000);
+
+        document.onmouseup = circleEnd; document.onmousemove = circleMove;
+        document.ontouchend = circleEnd; document.ontouchmove = circleMove;
     }
     function circleMove(e) {
         let cx = e.clientX || e.touches[0].clientX; let cy = e.clientY || e.touches[0].clientY;
         if(Math.max(Math.abs(cx - cPos3), Math.abs(cy - cPos4)) > 10) {
-            cMoved = true; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); e.preventDefault();
+            cMoved = true; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer);
+            e.preventDefault();
             cPos1 = cPos3 - cx; cPos2 = cPos4 - cy; cPos3 = cx; cPos4 = cy;
-            circleEl.style.top = (circleEl.offsetTop - cPos2) + "px"; circleEl.style.left = (circleEl.offsetLeft - cPos1) + "px"; circleEl.style.bottom = 'auto'; circleEl.style.right = 'auto';
+            circleEl.style.top = (circleEl.offsetTop - cPos2) + "px"; circleEl.style.left = (circleEl.offsetLeft - cPos1) + "px";
+            circleEl.style.bottom = 'auto'; circleEl.style.right = 'auto';
         }
     }
-    function circleEnd(e) { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); if(!cMoved) { toggleLiveTimer(); } }
+    function circleEnd(e) {
+        document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
+        circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer);
+        if(!cMoved) { toggleLiveTimer(); }
+    }
     circleEl.onmousedown = circleStart; circleEl.ontouchstart = circleStart;
 
-    // ================= 互动加分引擎 =================
+    // ================= 互动加分引擎 (全新长按连发) =================
     function openClassSelectModal() {
         let html = '';
         if (currentUser.role === 'student') {
@@ -1130,17 +1157,25 @@
         if(e.type === 'mousedown' && e.button !== 0) return;
         ptIsLongPress = false; ptIsDragging = false;
         let startY = e.touches ? e.touches[0].clientY : e.clientY;
-        const handleMove = (moveEvent) => { let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY; if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); } };
+
+        const handleMove = (moveEvent) => {
+            let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+            if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); }
+        };
         document.addEventListener('touchmove', handleMove, {passive: true}); document.addEventListener('mousemove', handleMove);
         e.target.cleanupMove = () => { document.removeEventListener('touchmove', handleMove); document.removeEventListener('mousemove', handleMove); };
 
         ptPressTimer = setTimeout(() => {
             if(ptIsDragging) return;
             ptIsLongPress = true; executePointChange(id, -1);
-            ptInterval = setInterval(() => executePointChange(id, -1), 200); 
-        }, 300); 
+            ptInterval = setInterval(() => executePointChange(id, -1), 200); // 连发扣分速度
+        }, 300); // 长按0.3秒触发
     }
-    function ptPressEnd(e, id) { clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } ptIsLongPress = false; }
+    function ptPressEnd(e, id) {
+        clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove();
+        if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } // 短按加分
+        ptIsLongPress = false;
+    }
     function ptPressCancel(e, id) { clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); ptIsLongPress = false; }
 
     function executePointChange(id, delta) {
