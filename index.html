@@ -355,7 +355,6 @@
             <textarea id="assign-hw-content" class="input-elegant" placeholder="作业具体要求..."></textarea>
             <div style="margin-bottom:16px; background:rgba(0,113,227,0.05); padding:12px; border-radius:12px;">
                 <label style="font-size:14px; display:flex; align-items:flex-start; gap:8px; cursor:pointer;"><input type="checkbox" id="assign-hw-requires-submit" checked style="margin-top:4px;"><span>要求学生在线上提交附件或文字解答</span></label>
-                <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">提示：如果取消勾选，学生将无需在系统内提交，您可以直接在档案页进行“线下批改”。</p>
             </div>
             <button class="btn-apple btn-purple" onclick="executeAssignStandaloneHw()">发布作业</button>
         </div>
@@ -590,29 +589,22 @@
     }
 
     // ================= 微信推送直连版 =================
-    async function testWxPush() {
+    function testWxPush() {
         const uid = document.getElementById('setting-wx-uid').value.trim();
         if(!uid) return alert("❌ 请先在上方填写你的 UID！(例如: UID_xxxx)");
         if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
-        try {
-            const response = await fetch('https://wxpusher.zjiecode.com/api/send/message', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: "✅ 恭喜！你的予行系统微信推送配置成功！能收到这条消息代表连接完全正常。", contentType: 1, uids: [uid] })
-            });
-            const data = await response.json();
-            if(data.code === 1000) { alert("🎉 测试消息发送成功！请查看微信是否收到。"); } 
-            else { alert("❌ 微信拒收，服务器返回信息：" + data.msg + "\n请检查 UID 是否正确，或是否已关注公众号。"); }
-        } catch (e) { alert("❌ 发送失败！网络请求被拦截，请检查是否使用了广告拦截器，或者尝试切换网络。具体报错：" + e.message); }
+        
+        const testMsg = "✅ 恭喜！予行系统微信推送通道已打通！";
+        const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(testMsg)}`;
+        
+        window.open(url, '_blank');
+        alert("💡 系统已在【新标签页】中发送了测试请求！\n\n👉 如果新网页中显示：\"code\": 1000，说明成功！请看微信。\n👉 如果显示：\"code\": 1004 等，说明您的 UID 填错了，或者没关注公众号，请按提示检查。");
     }
 
-    async function sendWxPush(uid, message) {
+    function sendWxPush(uid, message) {
         if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
-        try {
-            await fetch('https://wxpusher.zjiecode.com/api/send/message', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appToken: WXPUSHER_APP_TOKEN, content: message, summary: message.substring(0, 20) + '...', contentType: 1, uids: [uid] })
-            });
-        } catch (e) { console.error("微信推送后台网络异常:", e); }
+        const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(message)}`;
+        fetch(url, { method: 'GET', mode: 'no-cors' }).catch(e => console.warn("后台推送可能失败", e));
     }
 
     // ================= 悬浮窗拖拽与倒计时引擎 =================
@@ -826,13 +818,8 @@
     function markTeacherNotifRead(notifId) { let t = staffAccounts[currentUser.username]; if(t && t.notifications) { let n = t.notifications.find(x => x.id == notifId); if(n && !n.read) { n.read = true; saveData(); openNotificationsModal(); } } }
 
     window.updateStudentTotalPoints = function(newPoints) {
-        let pts = parseInt(newPoints) || 0;
-        let s = students.find(x => x.id == currentStudentId);
-        if(s) {
-            s.totalPoints = pts;
-            saveData();
-            renderMainDashboard();
-        }
+        let pts = parseInt(newPoints) || 0; let s = students.find(x => x.id == currentStudentId);
+        if(s) { s.totalPoints = pts; saveData(); renderMainDashboard(); }
     };
 
     function renderAdminDashboard() {
@@ -845,12 +832,8 @@
         document.getElementById('dash-annual').innerText = `￥${totalGenerated.toFixed(2)}`; document.getElementById('dash-monthly').innerText = `￥${totalPaid.toFixed(2)}`; document.getElementById('dash-pending').innerText = `￥${totalUnpaid.toFixed(2)}`;
     }
 
-    function openTeacherClassView(className) {
-        window.teacherViewingClass = className; document.getElementById('dashboard-main-title').innerText = `👨‍🎓 班级学生: ${className}`; renderMainDashboard();
-    }
-    function backToClassGrid() {
-        window.teacherViewingClass = null; document.getElementById('dashboard-main-title').innerText = `👨‍🎓 学生档案与记录`; document.getElementById('global-name-search').value = ''; renderMainDashboard();
-    }
+    function openTeacherClassView(className) { window.teacherViewingClass = className; document.getElementById('dashboard-main-title').innerText = `👨‍🎓 班级学生: ${className}`; renderMainDashboard(); }
+    function backToClassGrid() { window.teacherViewingClass = null; document.getElementById('dashboard-main-title').innerText = `👨‍🎓 学生档案与记录`; document.getElementById('global-name-search').value = ''; renderMainDashboard(); }
 
     function renderMainDashboard() {
         const gridView = document.getElementById('dashboard-class-grid'); const tableView = document.getElementById('dashboard-table-view');
@@ -970,7 +953,6 @@
     function deleteStudentGroup(usernameKey) { if(confirm("确定彻底移除该学生的所有课程档案吗？")) { students = students.filter(s => s.username !== usernameKey && s.id != usernameKey); saveData(); renderMainDashboard(); } }
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id == currentStudentId).teacherUsername = newUn; saveData(); renderMainDashboard(); alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`); }
 
-    // ================= 独立布置作业 =================
     function openAssignHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('assign-hw-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1005,7 +987,6 @@
         saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
-    // ================= 补录打卡/布置作业 (二合一防呆版) =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1026,9 +1007,10 @@
         const hwTitle = document.getElementById('pub-hw-title').value.trim(), hwContent = document.getElementById('pub-hw-content').value.trim(), reqSubmit = document.getElementById('pub-hw-requires-submit').checked;
         
         if(!st && !ed && !fb && !hwTitle) return alert("⚠️ 请至少填写【课堂纪实】或【课后作业】中的一项！两者皆空将无法保存。");
-        let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
         
+        let cbs = document.querySelectorAll('.pub-student-cb:checked'); if(cbs.length === 0) return alert("请至少勾选一名出勤学生");
         let actionCount = 0; let hwCount = 0;
+        
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
             if(s) {
@@ -1036,6 +1018,8 @@
                 if(st || ed || fb) {
                     if(st && ed) s.attendance.unshift({ startTime: st, endTime: ed, content: fb, billed: false });
                     else if(fb) s.attendance.unshift({ startTime: new Date().toISOString(), endTime: "", content: fb, billed: false, isClassFeedback: true });
+                    
+                    // 【已修复微信推送，自动换行】
                     addNotificationToStudent(s.id, `老师发布了课程 [${s.className}] 的打卡与反馈，请及时登录系统查看！`);
                     notified = true; actionCount++;
                 }
@@ -1052,40 +1036,34 @@
             }
         });
         if(actionCount === 0 && hwCount === 0) return; 
+        
         notifyTeacherByWx(currentUser.username, `✅ 您已成功处理勾选学生的任务：记录打卡 ${actionCount} 人次，布置作业 ${hwCount} 人次。`);
         saveData(); closeModal('publish-hw-modal'); alert(`成功处理完毕！\n录入打卡记录: ${actionCount}人次\n布置课后作业: ${hwCount}人次`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 圆形实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null; let activeLiveClass = ''; let activeLiveStudentIds = [];
-    
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
-    
     function openLiveClassSetup() {
         let sel = document.getElementById('live-class-select');
         if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join(''); } 
         else { let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join(''); }
         document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级/课程</span>'; document.getElementById('live-setup-modal').style.display = 'flex';
     }
-    
     function renderLiveStudentCheckboxes(targetVal) {
         if(!targetVal) return; let stList = [];
         if(targetVal.startsWith('class_')) { let clsName = targetVal.replace('class_', ''); activeLiveClass = `${clsName}`; stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username)); } 
         else if(targetVal.startsWith('studentrecord_')) { let recordId = targetVal.replace('studentrecord_', ''); let targetS = students.find(s => s.id == recordId); if(targetS) { activeLiveClass = `${targetS.name}`; stList = [targetS]; } }
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join(''); document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
     }
-
     function startLiveClass() {
         let selectEl = document.getElementById('live-class-select'); let cbs = document.querySelectorAll('.live-student-cb:checked');
         if(!selectEl.value) return alert("请先选择班级或课程！"); if(cbs.length === 0) return alert("请至少确认一名考勤学生");
         activeLiveStudentIds = Array.from(cbs).map(cb => cb.value); closeModal('live-setup-modal'); 
-        
         liveStatus = 'running'; liveSeconds = 0; clearInterval(liveInterval); 
         document.getElementById('circle-time').innerText = "00:00"; document.getElementById('circle-status').innerText = "上课中";
         let circleEl = document.getElementById('floating-circle-timer'); circleEl.classList.remove('paused'); circleEl.style.display = 'flex';
         liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000);
     }
-
     function toggleLiveTimer() {
         let circleEl = document.getElementById('floating-circle-timer');
         if(liveStatus === 'running') { 
@@ -1095,7 +1073,6 @@
             liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000); 
         }
     }
-
     function promptEndLiveClass() {
         if(confirm("确定要结束本节课并进行结算吗？")) {
             clearInterval(liveInterval); liveStatus = 'idle'; document.getElementById('floating-circle-timer').style.display = 'none';
@@ -1112,7 +1089,6 @@
             saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
         }
     }
-
     let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null; const circleEl = document.getElementById('floating-circle-timer');
     function circleStart(e) {
         if(e.type === 'mousedown' && e.button !== 0) return; e.preventDefault(); cMoved = false; circleEl.classList.add('pressing');
@@ -1132,14 +1108,10 @@
     function circleEnd(e) { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); if(!cMoved) { toggleLiveTimer(); } }
     circleEl.onmousedown = circleStart; circleEl.ontouchstart = circleStart;
 
-    // ================= 互动加分引擎 (防幽灵点击重写) =================
     function openClassSelectModal() {
         let html = '';
-        if (currentUser.role === 'student') {
-            let myStudents = students.filter(s => s.username === currentUser.username); html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`; html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join('');
-        } else {
-            let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); let optHtml = `<option value="" hidden>第一步：先选择一个班级</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join(''); html += `<select class="input-elegant" style="margin-bottom:16px;" onchange="renderClassroomIntOptions(this.value)">${optHtml}</select><div id="classroom-int-options"></div>`;
-        }
+        if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`; html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join(''); } 
+        else { let myClasses = currentUser.role === 'admin' ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); let optHtml = `<option value="" hidden>第一步：先选择一个班级</option>` + myClasses.map(c => `<option value="${c.name}">${c.name}</option>`).join(''); html += `<select class="input-elegant" style="margin-bottom:16px;" onchange="renderClassroomIntOptions(this.value)">${optHtml}</select><div id="classroom-int-options"></div>`; }
         document.getElementById('class-list-body').innerHTML = html; document.getElementById('class-select-modal').style.display = 'flex';
     }
     function renderClassroomIntOptions(className) {
@@ -1163,57 +1135,26 @@
     }
 
     let ptPressTimer = null, ptInterval = null, ptIsLongPress = false, ptIsDragging = false, ptGhostClickLock = false;
-    
     function ptPressStart(e, id) {
         if(e.type === 'touchstart') ptGhostClickLock = true;
-        if(e.type === 'mousedown' && ptGhostClickLock) return; // 拦截幽灵点击
+        if(e.type === 'mousedown' && ptGhostClickLock) return; 
         if(e.type === 'mousedown' && e.button !== 0) return; 
-
         ptIsLongPress = false; ptIsDragging = false;
         let startY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        const handleMove = (moveEvent) => {
-            let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-            if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); }
-        };
+        const handleMove = (moveEvent) => { let currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY; if(Math.abs(currentY - startY) > 10) { ptIsDragging = true; clearTimeout(ptPressTimer); clearInterval(ptInterval); } };
         document.addEventListener('touchmove', handleMove, {passive: true}); document.addEventListener('mousemove', handleMove);
         e.target.cleanupMove = () => { document.removeEventListener('touchmove', handleMove); document.removeEventListener('mousemove', handleMove); };
-
-        ptPressTimer = setTimeout(() => {
-            if(ptIsDragging) return;
-            ptIsLongPress = true; executePointChange(id, -1);
-            ptInterval = setInterval(() => executePointChange(id, -1), 200); 
-        }, 300); 
+        ptPressTimer = setTimeout(() => { if(ptIsDragging) return; ptIsLongPress = true; executePointChange(id, -1); ptInterval = setInterval(() => executePointChange(id, -1), 200); }, 300); 
     }
-    
     function ptPressEnd(e, id) {
-        if(e.type === 'mouseup' && ptGhostClickLock) { 
-            setTimeout(() => { ptGhostClickLock = false; }, 300); // 延时解除幽灵锁
-            return; 
-        }
+        if(e.type === 'mouseup' && ptGhostClickLock) { setTimeout(() => { ptGhostClickLock = false; }, 300); return; }
         clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove();
-        if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } 
-        ptIsLongPress = false;
+        if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } ptIsLongPress = false;
     }
-    
-    function ptPressCancel(e, id) { 
-        if(e.type === 'mouseleave' && ptGhostClickLock) return;
-        clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); ptIsLongPress = false; 
-    }
+    function ptPressCancel(e, id) { if(e.type === 'mouseleave' && ptGhostClickLock) return; clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); ptIsLongPress = false; }
+    function executePointChange(id, delta) { tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`); ptElem.innerText = tempClassPoints[id] > 0 ? `+${tempClassPoints[id]}` : tempClassPoints[id]; if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative'); card.classList.remove('bump-add', 'bump-sub'); void card.offsetWidth; card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub'); }
+    function closeClassroomInteraction() { for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; } saveData(); renderMainDashboard(); document.getElementById('floating-points-box').style.display = 'none'; }
 
-    function executePointChange(id, delta) {
-        tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`);
-        ptElem.innerText = tempClassPoints[id] > 0 ? `+${tempClassPoints[id]}` : tempClassPoints[id];
-        if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative');
-        card.classList.remove('bump-add', 'bump-sub'); void card.offsetWidth; card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub');
-    }
-    
-    function closeClassroomInteraction() {
-        for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; }
-        saveData(); renderMainDashboard(); document.getElementById('floating-points-box').style.display = 'none';
-    }
-
-    // ================= 作业提交与批改逻辑 =================
     function openSubmitHw(studentId, hwId) {
         let s = students.find(x => x.id == studentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId); if(!hw) return;
         document.getElementById('submit-hw-id').value = hwId; document.getElementById('submit-hw-title-disp').innerText = `作业题目: ${hw.title}`;
@@ -1259,7 +1200,6 @@
         if (document.getElementById('detail-modal').style.display === 'flex') { renderStudentDetails(); }
     }
 
-    // ================= 档案详情、展示 =================
     let transferTargetStudentId = null;
     function openStudentDetailById(id) { currentStudentId = id; renderStudentDetails(); document.getElementById('detail-modal').style.display = 'flex'; }
     
@@ -1356,7 +1296,9 @@
             if(rec.startTime && rec.endTime) { duration = `${rec.startTime.replace('T',' ')} - ${rec.endTime.split('T')[1] || rec.endTime}`; }
             let costStr = (isAdmin && rec.startTime && rec.endTime) ? `<span class="badge" style="background:rgba(52,199,89,0.1); color:var(--accent-green); margin-left:8px;">￥${(((new Date(rec.endTime)-new Date(rec.startTime))/3600000)*s.hourlyRate).toFixed(2)}</span>` : '';
             let delBtn = isManager ? `<span class="del-mini" style="font-size:11px; color:#ff3b30; cursor:pointer; position:absolute; right:16px; top:16px;" onclick="delRec('att', ${idx})">撤销此条</span>` : '';
-            html += `<div class="item-card"><strong>🕒 ${duration}</strong> ${costStr} <div style="margin-top:6px; color:var(--text-muted); font-size:14px;">纪实: ${rec.content || '无'}</div>${delBtn}</div>`;
+            
+            // 修复: 课堂纪实文本也应用 formatContent 函数以支持换行和链接
+            html += `<div class="item-card"><strong>🕒 ${duration}</strong> ${costStr} <div style="margin-top:6px; color:var(--text-muted); font-size:14px;">纪实:<br>${rec.content ? formatContent(rec.content) : '无'}</div>${delBtn}</div>`;
         });
         if(s.attendance.length===0) html += `<p style="font-size:13px; color:var(--text-muted);">暂无课堂记录</p>`;
 
