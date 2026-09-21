@@ -6,7 +6,6 @@
     <title>予行学生管理系统 Yuxing.student.management</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 引入 Uploadcare 上传组件 (已绑定你的专属 Public Key) -->
     <script>
         UPLOADCARE_PUBLIC_KEY = '6d82791e5327dd2c3eb8'; 
         UPLOADCARE_LOCALE = 'zh'; 
@@ -15,7 +14,6 @@
     <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
 
     <style>
-        /* Apple-Inspired Design System */
         :root {
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e8ecf2 100%);
             --glass-bg: rgba(255, 255, 255, 0.75);
@@ -111,7 +109,6 @@
         .btn-mini.red { background: rgba(255,59,48,0.1); color: var(--danger-red); }
         .btn-mini.red:hover { background: var(--danger-red); color: #fff; }
 
-        /* 卡片式大厅设计 */
         .dashboard-class-card {
             background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: 0 4px 15px rgba(0,0,0,0.03);
@@ -226,7 +223,6 @@
             <h1>予行管理中心 <span>Yuxing.student.management</span></h1>
             <div class="user-tag" id="current-user-display"></div>
             <div style="margin-top: 8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                <!-- 提示：测试按钮在这个【账号设置】里面 -->
                 <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openAccountModal()">账号设置 (含微信测试)</button>
                 <button class="btn-apple btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="forceLogout()">安全退出</button>
                 <button class="btn-apple btn-secondary" id="refresh-btn" style="padding: 6px 12px; font-size: 12px; width: auto; color: var(--accent-orange); font-weight:bold;" onclick="forceRefresh()">🔄 刷新数据</button>
@@ -245,9 +241,7 @@
             <button class="btn-apple btn-orange can-interact" style="width: auto;" onclick="openLiveClassSetup()">⏱️ 实时上课</button>
             <button class="btn-apple btn-secondary can-interact" style="width: auto;" onclick="openClassSelectModal()">✨ 互动加分</button>
             
-            <!-- 打卡与作业二合一入口 -->
             <button class="btn-apple btn-secondary manage-only" style="width: auto;" onclick="openPublishHwModal()">📝 补录打卡/发作业</button>
-            
             <button class="btn-apple manage-only" style="background:#5e5ce6; width: auto;" onclick="openAssignHwModal()">📖 布置独立作业</button>
             <button class="btn-apple manage-only" style="width: auto;" onclick="openAddStudentModal()">+ 新增学生</button>
         </div>
@@ -424,10 +418,8 @@
             <input type="password" id="setting-password" class="input-elegant" placeholder="新密码">
             <div style="margin-top:8px;">
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
-                <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID">
-                
-                <!-- 直连测试按钮 -->
-                <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1);" onclick="testWxPush()">🔔 点击自测：发送一条微信通知</button>
+                <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID (如 UID_xxxx)">
+                <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1); color:var(--accent-orange); font-weight:bold;" onclick="testWxPush()">🔔 必点：发一条微信测试通知连通性</button>
             </div>
             <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
             <button class="btn-apple" onclick="changeAccount()">保存修改</button>
@@ -474,6 +466,7 @@
             <div class="flex-row"><input type="datetime-local" id="pub-start" class="input-elegant" style="margin:0; flex:1;" title="上课时间"><span style="color:var(--text-muted)">至</span><input type="datetime-local" id="pub-end" class="input-elegant" style="margin:0; flex:1;" title="下课时间"></div>
             <textarea id="pub-feedback" class="input-elegant" style="margin-top:12px; min-height:50px;" placeholder="输入这节课的总体反馈/知识点..."></textarea>
             
+            <!-- 新增的作业模块 -->
             <div class="section-title" style="color:var(--text-muted); font-size:12px; margin-top:16px;">3. 同步布置课后作业 (选填，不填则不布置)</div>
             <input type="text" id="pub-hw-title" class="input-elegant" placeholder="作业题目 / 任务名称 (选填)">
             <textarea id="pub-hw-content" class="input-elegant" style="min-height:50px;" placeholder="作业具体要求..."></textarea>
@@ -594,21 +587,22 @@
         return html.replace(/\n/g, '<br>');
     }
 
-    // ================= 微信推送直连版 =================
-    function testWxPush() {
+    // ================= 微信推送直连版带有透视引擎 =================
+    async function testWxPush() {
         const uid = document.getElementById('setting-wx-uid').value.trim();
         if(!uid) return alert("❌ 请先在上方填写你的 UID！(例如: UID_xxxx)");
         if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
         
         const testMsg = "✅ 恭喜！予行系统微信推送通道已打通！";
+        // 改用新开网页，让用户亲眼看到 WxPusher 服务器返回的结果，彻底解决被浏览器拦截的问题
         const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(testMsg)}`;
-        
         window.open(url, '_blank');
         alert("💡 系统已在【新标签页】中发送了测试请求！\n\n👉 如果新网页中显示：\"code\": 1000，说明成功！请看微信。\n👉 如果显示：\"code\": 1004 等，说明您的 UID 填错了，或者没关注公众号，请按提示检查。");
     }
 
     function sendWxPush(uid, message) {
         if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
+        // 生产环境发通知时，使用 no-cors 模式静默发送，完全免疫所有浏览器的 CORS 拦截
         const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(message)}`;
         fetch(url, { method: 'GET', mode: 'no-cors' }).catch(e => console.warn("后台推送可能失败", e));
     }
@@ -653,7 +647,7 @@
     window.onload = async function() {
         const loginBtn = document.getElementById('login-btn'); loginBtn.innerText = '正在连接云端...'; loginBtn.disabled = true;
         try {
-            // 加入 5秒超时强制脱困机制
+            // 加入 5秒超时强制脱困机制，网络不好直接切本地缓存
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -664,6 +658,12 @@
             }); 
             clearTimeout(timeoutId);
             
+            // 加入详细的底层错误透视引擎
+            if (!res.ok) {
+                let errText = await res.text();
+                throw new Error(`HTTP ${res.status}: ${errText}`);
+            }
+
             let data = await res.json();
             let cloudLastUpdated = (data.record && data.record.lastUpdated) ? data.record.lastUpdated : 0;
             let localLastUpdated = parseInt(localStorage.getItem('yuxing_last_updated_v11')) || 0;
@@ -693,14 +693,19 @@
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
         if(s && s.user && (Date.now() - s.lastActive < 14400000)) { currentUser = s.user; s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v11', JSON.stringify(s)); loginSuccess(true); }
         
-        makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
-        makeDraggable(document.getElementById('floating-countdown-box'), 'countdown-drag-handle');
+        makeDraggable('floating-points-box', 'points-drag-handle');
+        makeDraggable('floating-countdown-box', 'countdown-drag-handle');
     };
 
     async function forceRefresh() {
         const btn = document.getElementById('refresh-btn'); if(btn) { btn.innerText = '刷新中...'; btn.disabled = true; }
         try {
-            let res = await fetch(`${CLOUD_URL}/latest?_t=${Date.now()}`, { headers: { 'X-Master-Key': API_KEY }, cache: 'no-store' }); let data = await res.json();
+            let res = await fetch(`${CLOUD_URL}/latest?_t=${Date.now()}`, { headers: { 'X-Master-Key': API_KEY }, cache: 'no-store' }); 
+            if (!res.ok) {
+                let errText = await res.text();
+                throw new Error(`HTTP 状态码: ${res.status}\n详细信息: ${errText}`);
+            }
+            let data = await res.json();
             if(data && data.record) {
                 staffAccounts = data.record.staffAccounts || staffAccounts; students = data.record.students || []; classGroups = data.record.classGroups || [];
                 let cloudLastUpdated = data.record.lastUpdated || Date.now();
@@ -710,7 +715,10 @@
                 if(document.getElementById('detail-modal').style.display === 'flex') { renderStudentDetails(); }
                 alert("✅ 数据已同步到最新状态！");
             }
-        } catch (e) { alert("刷新失败，请检查网络连接！"); }
+        } catch (e) { 
+            console.error(e);
+            alert("❌ 刷新失败！\n\n【底层错误诊断】\n" + e.message + "\n\n💡 诊断建议：\n1. 如果显示 'Failed to fetch'，说明您的网络被防火墙彻底阻断了。\n2. 如果显示 'HTTP 401/403'，说明您的 API Key 已经失效或填错。\n3. 如果显示 'HTTP 429'，说明您本月的 JSONBin 免费额度已经用尽！"); 
+        }
         if(btn) { btn.innerText = '🔄 刷新数据'; btn.disabled = false; }
     }
 
@@ -720,12 +728,19 @@
         const statusEl = document.getElementById('cloud-status'); if(statusEl) { statusEl.innerText = '☁️ 正在同步...'; statusEl.classList.add('show'); }
         fetch(CLOUD_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify({ staffAccounts, students, classGroups, lastUpdated: now })
         }).then(async res => {
-            if(!res.ok) throw new Error("Sync failed");
+            if(!res.ok) {
+                let errText = await res.text();
+                throw new Error(`HTTP 状态码: ${res.status}\n详细信息: ${errText}`);
+            }
             if(statusEl) { statusEl.innerText = '☁️ 云端已同步'; setTimeout(() => statusEl.classList.remove('show'), 2000); }
             if(document.getElementById('finance-modal').style.display === 'flex') { openFinanceDashboard(); }
             if(currentUser && currentUser.role === 'admin') { renderAdminDashboard(); }
             updateBadge(); 
-        }).catch(err => { if(statusEl) { statusEl.innerText = '⚠️ 网络异常，存至本地'; setTimeout(() => statusEl.classList.remove('show'), 4000); } });
+        }).catch(err => { 
+            console.error("云端保存失败:", err);
+            if(statusEl) { statusEl.innerText = '⚠️ 云端异常，已存本地'; setTimeout(() => statusEl.classList.remove('show'), 4000); } 
+            alert("⚠️ 云端同步失败！\n\n【底层错误诊断】\n" + err.message + "\n\n💡 诊断建议：如果是 HTTP 429 报错，说明本月免费额度用尽。请放心，您的数据已【安全保存】在本设备上，在此之前请勿清理浏览器缓存！");
+        });
     }
 
     let activityTimeout = null;
@@ -986,6 +1001,7 @@
     function deleteStudentGroup(usernameKey) { if(confirm("确定彻底移除该学生的所有课程档案吗？")) { students = students.filter(s => s.username !== usernameKey && s.id != usernameKey); saveData(); renderMainDashboard(); } }
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id == currentStudentId).teacherUsername = newUn; saveData(); renderMainDashboard(); alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`); }
 
+    // ================= 独立布置作业 =================
     function openAssignHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('assign-hw-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1020,6 +1036,7 @@
         saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
+    // ================= 补录打卡与发布作业融合版 =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1071,25 +1088,20 @@
         saveData(); closeModal('publish-hw-modal'); alert(`成功处理完毕！\n录入打卡记录: ${actionCount}人次\n布置课后作业: ${hwCount}人次`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
-    // ================= 圆形实时课堂秒表 =================
     let liveStatus = 'idle'; let liveSeconds = 0; let liveInterval = null; let activeLiveClass = ''; let activeLiveStudentIds = [];
-    
     function formatTime(sec) { let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m + ':' + (s<10?'0':'')+s; }
-    
     function openLiveClassSetup() {
         let sel = document.getElementById('live-class-select');
         if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); sel.innerHTML = `<option value="" hidden>选择我的课程</option>` + myStudents.map(s => `<option value="studentrecord_${s.id}">${s.className||'未命名'}</option>`).join(''); } 
         else { let myClasses = (currentUser.role === 'admin') ? classGroups : classGroups.filter(c => c.teacherUsername === currentUser.username); sel.innerHTML = `<option value="" hidden>请先选择班级</option>` + myClasses.map(c => `<option value="class_${c.name}">${c.name}</option>`).join(''); }
         document.getElementById('live-student-list').innerHTML = '<span style="color:var(--text-muted); font-size:13px;">请先在上方选择班级/课程</span>'; document.getElementById('live-setup-modal').style.display = 'flex';
     }
-    
     function renderLiveStudentCheckboxes(targetVal) {
         if(!targetVal) return; let stList = [];
         if(targetVal.startsWith('class_')) { let clsName = targetVal.replace('class_', ''); activeLiveClass = `${clsName}`; stList = students.filter(s => s.className === clsName && (currentUser.role === 'admin' || s.teacherUsername === currentUser.username)); } 
         else if(targetVal.startsWith('studentrecord_')) { let recordId = targetVal.replace('studentrecord_', ''); let targetS = students.find(s => s.id == recordId); if(targetS) { activeLiveClass = `${targetS.name}`; stList = [targetS]; } }
         let html = stList.map(s => `<label class="student-cb-item"><input type="checkbox" class="live-student-cb" value="${s.id}" checked> ${s.name}</label>`).join(''); document.getElementById('live-student-list').innerHTML = html || '<span style="color:var(--text-muted); font-size:13px;">没有找到对应学生</span>';
     }
-
     function startLiveClass() {
         let selectEl = document.getElementById('live-class-select'); let cbs = document.querySelectorAll('.live-student-cb:checked');
         if(!selectEl.value) return alert("请先选择班级或课程！"); if(cbs.length === 0) return alert("请至少确认一名考勤学生");
@@ -1100,7 +1112,6 @@
         let circleEl = document.getElementById('floating-circle-timer'); circleEl.classList.remove('paused'); circleEl.style.display = 'flex';
         liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000);
     }
-
     function toggleLiveTimer() {
         let circleEl = document.getElementById('floating-circle-timer');
         if(liveStatus === 'running') { 
@@ -1110,7 +1121,6 @@
             liveInterval = setInterval(() => { liveSeconds++; document.getElementById('circle-time').innerText = formatTime(liveSeconds); }, 1000); 
         }
     }
-
     function promptEndLiveClass() {
         if(confirm("确定要结束本节课并进行结算吗？")) {
             clearInterval(liveInterval); liveStatus = 'idle'; document.getElementById('floating-circle-timer').style.display = 'none';
@@ -1127,7 +1137,6 @@
             saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
         }
     }
-
     let cPos1=0, cPos2=0, cPos3=0, cPos4=0, cMoved=false, cLongPressTimer=null; const circleEl = document.getElementById('floating-circle-timer');
     function circleStart(e) {
         if(e.type === 'pointerdown' && e.button !== 0) return; e.preventDefault(); cMoved = false; circleEl.classList.add('pressing');
@@ -1173,7 +1182,6 @@
     }
 
     let ptPressTimer = null, ptInterval = null, ptIsLongPress = false, ptIsDragging = false;
-    
     function ptPressStart(e, id) {
         if(e.pointerType === 'mouse' && e.button !== 0) return; 
         ptIsLongPress = false; ptIsDragging = false;
@@ -1183,23 +1191,19 @@
         e.target.cleanupMove = () => { document.removeEventListener('pointermove', handleMove); };
         ptPressTimer = setTimeout(() => { if(ptIsDragging) return; ptIsLongPress = true; executePointChange(id, -1); ptInterval = setInterval(() => executePointChange(id, -1), 200); }, 300); 
     }
-    
     function ptPressEnd(e, id) {
         clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove();
         if(e.pointerType !== 'mouse' && e.cancelable) { e.preventDefault(); }
         if (!ptIsLongPress && !ptIsDragging) { executePointChange(id, 1); } 
         ptIsLongPress = false;
     }
-    
     function ptPressCancel(e, id) { clearTimeout(ptPressTimer); clearInterval(ptInterval); if(e.target.cleanupMove) e.target.cleanupMove(); ptIsLongPress = false; }
-
     function executePointChange(id, delta) {
         tempClassPoints[id] += delta; let ptElem = document.getElementById(`pt-${id}`), card = document.getElementById(`card-${id}`);
         ptElem.innerText = tempClassPoints[id] > 0 ? `+${tempClassPoints[id]}` : tempClassPoints[id];
         if (tempClassPoints[id] < 0) ptElem.classList.add('negative'); else ptElem.classList.remove('negative');
         card.classList.remove('bump-add', 'bump-sub'); void card.offsetWidth; card.classList.add(delta > 0 ? 'bump-add' : 'bump-sub');
     }
-    
     function closeClassroomInteraction() {
         for (let id in tempClassPoints) { let s = students.find(x => x.id == id); if(s && tempClassPoints[id] !== 0) s.totalPoints = (s.totalPoints || 0) + tempClassPoints[id]; }
         saveData(); renderMainDashboard(); document.getElementById('floating-points-box').style.display = 'none';
@@ -1273,10 +1277,31 @@
     function confirmPayment(billId) { let s = students.find(x => x.id == currentStudentId); let b = s.bills.find(x => x.id === billId); b.status = 'paid'; saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); }
     function revokeBill(studentId, billId) { if(!confirm("确定要撤销这张催费单吗？撤销后相关打卡记录将恢复为未出账状态。")) return; let s = students.find(x => x.id == studentId); s.bills = s.bills.filter(b => b.id !== billId); (s.attendance || []).forEach(a => { a.billed = false; }); saveData(); renderStudentDetails(); if(currentUser.role === 'admin') renderAdminDashboard(); alert("已成功撤销该催费单并恢复未结清状态！"); }
     function delRec(type, idx) { if(!confirm("确认删除？")) return; let s = students.find(x => x.id == currentStudentId); if (type === 'att') s.attendance.splice(idx, 1); else s.assignments.splice(idx, 1); saveData(); renderStudentDetails(); if(currentUser.role==='admin') renderAdminDashboard();}
+
     function openAddTeacherModal() { document.getElementById('new-teacher-name').value = ''; document.getElementById('new-teacher-username').value = ''; document.getElementById('add-teacher-modal').style.display = 'flex'; }
     function addTeacher() { const name = document.getElementById('new-teacher-name').value.trim(), un = document.getElementById('new-teacher-username').value.trim(), pw = document.getElementById('new-teacher-password').value.trim(); const wxUid = document.getElementById('new-teacher-wx').value.trim(); if(!name || !un || !pw) return alert("信息不全"); if(staffAccounts[un] || students.find(s=>s.username === un)) return alert("账号已存在"); staffAccounts[un] = { role: 'teacher', name, password: pw, wxUid: wxUid, notifications: [] }; saveData(); renderMainDashboard(); closeModal('add-teacher-modal'); alert("添加成功"); }
-    function openAccountModal() { document.getElementById('setting-username').value = currentUser.username; document.getElementById('setting-password').value = ''; let wxUidField = document.getElementById('setting-wx-uid'); if (currentUser.role === 'student') { let s = students.find(x => x.username === currentUser.username); wxUidField.value = s ? (s.wxUid || '') : ''; } else { wxUidField.value = staffAccounts[currentUser.username].wxUid || ''; } let adminSec = document.getElementById('admin-recovery-section'); if (currentUser.role === 'admin') { adminSec.style.display = 'block'; document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026'; } else { adminSec.style.display = 'none'; } document.getElementById('account-modal').style.display = 'flex'; }
-    function changeAccount() { const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim(), wxUid = document.getElementById('setting-wx-uid').value.trim(); if(!u || !p) return alert("用户名和新密码不能为空"); if (currentUser.role === 'student') { students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; s.wxUid = wxUid; } }); } else { let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; staffAccounts[u].wxUid = wxUid; if(staffAccounts[u].role === 'admin') { const recKey = document.getElementById('setting-recovery-key').value.trim(); if(recKey) staffAccounts[u].recoveryKey = recKey; } } currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功，修改已同步。"); }
+    
+    function openAccountModal() { 
+        document.getElementById('setting-username').value = currentUser.username; document.getElementById('setting-password').value = ''; 
+        let wxUidField = document.getElementById('setting-wx-uid');
+        if (currentUser.role === 'student') { let s = students.find(x => x.username === currentUser.username); wxUidField.value = s ? (s.wxUid || '') : ''; } 
+        else { wxUidField.value = staffAccounts[currentUser.username].wxUid || ''; }
+        let adminSec = document.getElementById('admin-recovery-section');
+        if (currentUser.role === 'admin') { adminSec.style.display = 'block'; document.getElementById('setting-recovery-key').value = staffAccounts['admin'].recoveryKey || 'YUXING2026'; } else { adminSec.style.display = 'none'; }
+        document.getElementById('account-modal').style.display = 'flex'; 
+    }
+
+    function changeAccount() {
+        const u = document.getElementById('setting-username').value.trim(), p = document.getElementById('setting-password').value.trim(), wxUid = document.getElementById('setting-wx-uid').value.trim();
+        if(!u || !p) return alert("用户名和新密码不能为空");
+        if (currentUser.role === 'student') { students.forEach(s => { if (s.username === currentUser.username) { s.username = u; s.password = p; s.wxUid = wxUid; } }); } 
+        else { 
+            let data = staffAccounts[currentUser.username]; delete staffAccounts[currentUser.username]; staffAccounts[u] = data; staffAccounts[u].password = p; staffAccounts[u].wxUid = wxUid;
+            if(staffAccounts[u].role === 'admin') { const recKey = document.getElementById('setting-recovery-key').value.trim(); if(recKey) staffAccounts[u].recoveryKey = recKey; }
+        }
+        currentUser.username = u; saveData(); closeModal('account-modal'); alert("更新成功，修改已同步。");
+    }
+
     function toLocalISOString(date) { const pad = n => n < 10 ? '0' + n : n; return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()); }
     function openFinanceDashboard() { document.getElementById('finance-modal').style.display = 'flex'; let studentData = {}; students.forEach(s => { let sTotal = 0; (s.attendance || []).forEach(a => { if(a.endTime && a.startTime) { let hrs = (new Date(a.endTime) - new Date(a.startTime)) / 3600000; if(hrs > 0) sTotal += hrs * (s.hourlyRate || 0); } }); if (sTotal > 0) { studentData[s.name] = (studentData[s.name] || 0) + sTotal; } }); if(chartMonthly) chartMonthly.destroy(); chartMonthly = new Chart(document.getElementById('chart-monthly'), { type: 'bar', data: { labels: Object.keys(studentData), datasets: [{ label: '学生全课程累计产生课时费 (￥)', data: Object.values(studentData), backgroundColor: '#0071e3', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } }); if(chartStudents) chartStudents.destroy(); chartStudents = new Chart(document.getElementById('chart-students'), { type: 'doughnut', data: { labels: Object.keys(studentData), datasets: [{ data: Object.values(studentData), backgroundColor: ['#34c759', '#f56300', '#5e5ce6', '#ff3b30', '#ff9500', '#0071e3'] }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%' } }); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; updateBadge(); }
