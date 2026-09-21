@@ -109,6 +109,7 @@
         .btn-mini.red { background: rgba(255,59,48,0.1); color: var(--danger-red); }
         .btn-mini.red:hover { background: var(--danger-red); color: #fff; }
 
+        /* 卡片式大厅设计 */
         .dashboard-class-card {
             background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: 0 4px 15px rgba(0,0,0,0.03);
@@ -135,7 +136,8 @@
         .student-pt-card { 
             background: #fff; border: 2px solid transparent; padding: 20px 10px; border-radius: 16px; 
             text-align: center; cursor: pointer; transition: all 0.2s var(--ease-apple); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); touch-action: pan-y; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+            touch-action: pan-y; 
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         }
         .student-pt-card.bump-add { animation: ptBumpAdd 0.2s var(--ease-apple); border-color: var(--accent-orange); background: rgba(245,99,0,0.05); }
@@ -657,8 +659,8 @@
         } catch (error) {
             console.warn("直连云端失败，自动切换至代理通道...");
             try {
-                // 尝试代理通道
-                let proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(`${CLOUD_URL}/latest?_t=${Date.now()}`);
+                // 尝试代理通道：完美规避 corsproxy.io 的封杀，使用全新开源通道 corsproxy.org
+                let proxyUrl = 'https://corsproxy.org/?' + encodeURIComponent(`${CLOUD_URL}/latest?_t=${Date.now()}`);
                 let proxyRes = await fetch(proxyUrl, { headers: { 'X-Master-Key': API_KEY }, cache: 'no-store' });
                 if (!proxyRes.ok) throw new Error("proxy_fail");
                 data = await proxyRes.json();
@@ -703,8 +705,8 @@
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
         if(s && s.user && (Date.now() - s.lastActive < 14400000)) { currentUser = s.user; s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v11', JSON.stringify(s)); loginSuccess(true); }
         
-        makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
-        makeDraggable(document.getElementById('floating-countdown-box'), 'countdown-drag-handle');
+        makeDraggable('floating-points-box', 'points-drag-handle');
+        makeDraggable('floating-countdown-box', 'countdown-drag-handle');
     };
 
     async function forceRefresh() {
@@ -716,7 +718,8 @@
                 if (!res.ok) throw new Error("direct_fail");
             } catch (e) {
                 console.warn("直连失败，启用备用代理通道...");
-                res = await fetch('https://corsproxy.io/?' + encodeURIComponent(`${CLOUD_URL}/latest?_t=${Date.now()}`), { headers: { 'X-Master-Key': API_KEY }, cache: 'no-store' });
+                // 使用 corsproxy.org 替换失效的 .io
+                res = await fetch('https://corsproxy.org/?' + encodeURIComponent(`${CLOUD_URL}/latest?_t=${Date.now()}`), { headers: { 'X-Master-Key': API_KEY }, cache: 'no-store' });
             }
 
             if (!res.ok) {
@@ -755,7 +758,8 @@
         })
         .catch(async err => {
             console.warn("直连保存失败，切换代理通道...");
-            return fetch('https://corsproxy.io/?' + encodeURIComponent(CLOUD_URL), reqOptions);
+            // 使用 corsproxy.org 替换失效的 .io
+            return fetch('https://corsproxy.org/?' + encodeURIComponent(CLOUD_URL), reqOptions);
         })
         .then(async res => {
             if(!res.ok) { let errText = await res.text(); throw new Error(`HTTP 状态码: ${res.status}\n详细信息: ${errText}`); }
@@ -1001,7 +1005,7 @@
     function saveTeacherPw() { let un = document.getElementById('edit-t-un').value, newPw = document.getElementById('edit-t-pw').value.trim(); if(!newPw) return alert("密码不能为空"); if(staffAccounts[un]) { staffAccounts[un].password = newPw; saveData(); closeModal('edit-teacher-pw-modal'); alert(`教师 ${staffAccounts[un].name} 的密码已修改。`); } }
     function deleteTeacher(un) { if(!confirm(`确定移除教师 ${staffAccounts[un].name} 吗？\n该教师名下的班级和学生将自动转交超级管理员接管。`)) return; classGroups.forEach(c => { if(c.teacherUsername === un) c.teacherUsername = 'admin'; }); students.forEach(s => { if(s.teacherUsername === un) s.teacherUsername = 'admin'; }); delete staffAccounts[un]; renderMainDashboard(); saveData(); }
 
-    function openClassManageModal() { let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option ঘটন`; document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList(); }
+    function openClassManageModal() { let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name} (${key})</option>`; document.getElementById('manage-assign-teacher').innerHTML = tOpts; document.getElementById('class-manage-modal').style.display = 'flex'; renderClassManageList(); }
     function createNewClass() { const cName = document.getElementById('manage-new-class').value.trim(), tUn = document.getElementById('manage-assign-teacher').value, cType = document.getElementById('manage-class-type').value; if(!cName) return; if(classGroups.find(c => c.name === cName)) return alert("名称已存在"); classGroups.push({ id: Date.now(), name: cName, teacherUsername: tUn, classType: cType }); saveData(); document.getElementById('manage-new-class').value = ''; renderClassManageList(); renderMainDashboard(); }
     function renderClassManageList() {
         let tOpts = ''; for(let key in staffAccounts) if(staffAccounts[key].role !== 'student') tOpts += `<option value="${key}">${staffAccounts[key].name}</option>`;
@@ -1052,13 +1056,15 @@
         cbs.forEach(cb => {
             let s = students.find(x => x.id == cb.value);
             if(s) {
-                let newHwId = 'HW_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                let newHwId = 'HW_' + Date.now() + '_' + Math.floor(random()*1000);
                 s.assignments.unshift({ id: newHwId, title: hwTitle, content: fullContent, status: "pending", submitContent: "", submitHistory: [], accuracy: "待批改", points: 0, comment: "未评价", requiresSubmit: reqSubmit });
                 let notifMsg = reqSubmit ? `老师发布了新作业: <b>${hwTitle}</b>，请及时在线上提交！` : `老师发布了线下作业: <b>${hwTitle}</b>，本作业无需在线提交，请直接将纸质版交给老师。`;
                 addNotificationToStudent(s.id, notifMsg); actionCount++;
             }
         });
-        if(actionCount === 0) return; saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
+        if(actionCount === 0) return; 
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功为 ${actionCount} 名学生布置了独立作业：${hwTitle}`);
+        saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
     function openPublishHwModal() {
@@ -1108,6 +1114,7 @@
             }
         });
         if(actionCount === 0 && hwCount === 0) return; 
+        notifyTeacherByWx(currentUser.username, `✅ 您已成功处理勾选学生的任务：记录打卡 ${actionCount} 人次，布置作业 ${hwCount} 人次。`);
         saveData(); closeModal('publish-hw-modal'); alert(`成功处理完毕！\n录入打卡记录: ${actionCount}人次\n布置课后作业: ${hwCount}人次`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
     }
 
@@ -1156,6 +1163,7 @@
                     addNotificationToStudent(s.id, `课程 <b>${s.className}</b> 刚刚完成了一次上课打卡。`); 
                 } 
             });
+            notifyTeacherByWx(currentUser.username, `✅ 您已成功完成 [${activeLiveClass}] 的下课结算！共有效上课 ${formatTime(liveSeconds)}。`);
             saveData(); alert(`已结算！共有效上课 ${formatTime(liveSeconds)}。`); renderMainDashboard(); if(currentUser.role==='admin') renderAdminDashboard();
         }
     }
@@ -1234,6 +1242,7 @@
         if(!submitText) return alert("提交内容不能为空！请先点击上方按钮上传文件，或直接在框内输入文字解答。");
         let s = students.find(x => x.id == currentStudentId); let hw = s.assignments.find(x => x.id == hwId || x.title == hwId);
         hw.submitContent = submitText; hw.status = 'submitted'; hw.accuracy = "等待老师批改"; hw.comment = "未评价";
+        notifyTeacherByWx(s.teacherUsername, `学生 ${s.name} 刚刚提交了作业 [${hw.title}]，请登录系统查看。`);
         saveData(); closeModal('submit-hw-modal'); alert("作业提交成功！已通知老师批改。"); renderStudentDetails();
     }
     
