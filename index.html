@@ -109,6 +109,7 @@
         .btn-mini.red { background: rgba(255,59,48,0.1); color: var(--danger-red); }
         .btn-mini.red:hover { background: var(--danger-red); color: #fff; }
 
+        /* 卡片式大厅设计 */
         .dashboard-class-card {
             background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: 0 4px 15px rgba(0,0,0,0.03);
@@ -135,8 +136,7 @@
         .student-pt-card { 
             background: #fff; border: 2px solid transparent; padding: 20px 10px; border-radius: 16px; 
             text-align: center; cursor: pointer; transition: all 0.2s var(--ease-apple); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
-            touch-action: pan-y; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); touch-action: pan-y; 
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         }
         .student-pt-card.bump-add { animation: ptBumpAdd 0.2s var(--ease-apple); border-color: var(--accent-orange); background: rgba(245,99,0,0.05); }
@@ -420,8 +420,7 @@
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">📲 微信推送通知绑定</div>
                 <input type="text" id="setting-wx-uid" class="input-elegant" placeholder="填入在 WxPusher 扫码获取的 UID (如 UID_xxxx)">
                 
-                <!-- 直连测试按钮 (无视拦截) -->
-                <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1); color:var(--accent-orange); font-weight:bold;" onclick="testWxPush()">🔔 必点：发送一条微信测试连通性</button>
+                <button class="btn-apple btn-secondary" style="width:100%; margin-top:-8px; margin-bottom:16px; font-size:12px; border:1px solid rgba(0,0,0,0.1); color:var(--accent-orange); font-weight:bold;" onclick="testWxPush()">🔔 必点：发一条微信测试通知连通性</button>
             </div>
             <div id="admin-recovery-section" style="display:none; margin-top:8px;"><div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">🔑 专属：超级恢复密钥</div><input type="text" id="setting-recovery-key" class="input-elegant" placeholder="设置超级恢复密钥"></div>
             <button class="btn-apple" onclick="changeAccount()">保存修改</button>
@@ -583,28 +582,31 @@
         });
     });
 
+    // 修复后的终极内容排版函数（百分百防报错）
     function formatContent(text) {
-        if (!text) return ''; const urlRegex = /(https?:\/\/[^\s]+)/g;
+        if (!text && text !== 0) return ''; 
+        text = String(text); // 强制转化为字符串，杜绝老数据格式引发的崩溃
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
         let html = text.replace(urlRegex, '<a href="$1" target="_blank" style="color:var(--accent-blue); text-decoration:underline; font-weight:bold;">$1 (点击查阅)</a>');
         return html.replace(/\n/g, '<br>');
     }
 
-    // ================= 无视拦截的微信测试与发送引擎 =================
+    // ================= 微信推送直连版带有透视引擎 =================
     function testWxPush() {
         const uid = document.getElementById('setting-wx-uid').value.trim();
         if(!uid) return alert("❌ 请先在上方填写你的 UID！(例如: UID_xxxx)");
         if(!uid.startsWith('UID_')) return alert("❌ UID 格式不对，必须以 UID_ 开头哦！");
         
         const testMsg = "✅ 恭喜！予行系统微信推送通道已打通！";
-        // 强制使用 GET 并在新窗口打开，彻底绕过一切跨域和请求拦截
+        // 改用新开网页，让用户亲眼看到 WxPusher 服务器返回的结果，彻底解决被浏览器拦截的问题
         const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(testMsg)}`;
         window.open(url, '_blank');
-        alert("💡 系统已在【新标签页】中打开了测试连接！\n\n👉 如果新网页中显示：\"code\": 1000，说明成功！请看微信。\n👉 如果显示：\"code\": 1004 等，说明您的 UID 填错了，或者没关注公众号，请按提示检查。");
+        alert("💡 系统已在【新标签页】中发送了测试请求！\n\n👉 如果新网页中显示：\"code\": 1000，说明成功！请看微信。\n👉 如果显示：\"code\": 1004 等，说明您的 UID 填错了，或者没关注公众号，请按提示检查。");
     }
 
     function sendWxPush(uid, message) {
         if (!uid || !uid.startsWith('UID_') || WXPUSHER_APP_TOKEN.includes("请在这里填写")) return;
-        // 生产环境降级为免鉴权的 no-cors GET 请求，100% 送达
+        // 生产环境发通知时，使用 no-cors 模式静默发送，完全免疫所有浏览器的 CORS 拦截
         const url = `https://wxpusher.zjiecode.com/api/send/message/?appToken=${WXPUSHER_APP_TOKEN}&uid=${uid}&content=${encodeURIComponent(message)}`;
         fetch(url, { method: 'GET', mode: 'no-cors' }).catch(e => console.warn("后台推送可能失败", e));
     }
@@ -648,40 +650,37 @@
 
     window.onload = async function() {
         const loginBtn = document.getElementById('login-btn'); loginBtn.innerText = '正在连接云端...'; loginBtn.disabled = true;
-        
         try {
-            // 纯净直连获取最新数据
+            // 加入 5秒超时强制脱困机制，网络不好直接切本地缓存
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-            
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
             let res = await fetch(`${CLOUD_URL}/latest?_t=${Date.now()}`, { 
                 headers: { 'X-Master-Key': API_KEY }, 
                 cache: 'no-store',
                 signal: controller.signal 
             }); 
             clearTimeout(timeoutId);
-            if (!res.ok) throw new Error("直连请求失败");
             
+            // 加入详细的底层错误透视引擎
+            if (!res.ok) {
+                let errText = await res.text();
+                throw new Error(`HTTP ${res.status}: ${errText}`);
+            }
+
             let data = await res.json();
             let cloudLastUpdated = (data.record && data.record.lastUpdated) ? data.record.lastUpdated : 0;
             let localLastUpdated = parseInt(localStorage.getItem('yuxing_last_updated_v11')) || 0;
 
             if (localLastUpdated > cloudLastUpdated && localLastUpdated > 0) {
-                staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v11')) || staffAccounts; 
-                students = JSON.parse(localStorage.getItem('yuxing_students_v11')) || students; 
-                classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v11')) || classGroups; 
-                saveData(); // 本地数据较新，静默推上云端
-            } else {
-                staffAccounts = data.record.staffAccounts || staffAccounts; 
-                if(staffAccounts['admin'] && !staffAccounts['admin'].recoveryKey) staffAccounts['admin'].recoveryKey = 'YUXING2026';
+                staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v11')) || staffAccounts; students = JSON.parse(localStorage.getItem('yuxing_students_v11')) || students; classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v11')) || classGroups; saveData();
+            } else if(data && data.record) {
+                staffAccounts = data.record.staffAccounts || staffAccounts; if(staffAccounts['admin'] && !staffAccounts['admin'].recoveryKey) staffAccounts['admin'].recoveryKey = 'YUXING2026';
                 students = data.record.students || []; classGroups = data.record.classGroups || [];
-                localStorage.setItem('yuxing_staff_v11', JSON.stringify(staffAccounts)); 
-                localStorage.setItem('yuxing_students_v11', JSON.stringify(students)); 
-                localStorage.setItem('yuxing_classes_v11', JSON.stringify(classGroups)); 
-                localStorage.setItem('yuxing_last_updated_v11', cloudLastUpdated);
+                localStorage.setItem('yuxing_staff_v11', JSON.stringify(staffAccounts)); localStorage.setItem('yuxing_students_v11', JSON.stringify(students)); localStorage.setItem('yuxing_classes_v11', JSON.stringify(classGroups)); localStorage.setItem('yuxing_last_updated_v11', cloudLastUpdated);
             }
         } catch (error) {
-            console.warn("云端连接超时或被拦截，切换脱机模式：", error);
+            console.warn("云端连接超时或失败，已自动切换为本地缓存模式：", error);
             try {
                 staffAccounts = JSON.parse(localStorage.getItem('yuxing_staff_v11')) || staffAccounts; 
                 if(staffAccounts['admin'] && !staffAccounts['admin'].recoveryKey) staffAccounts['admin'].recoveryKey = 'YUXING2026';
@@ -689,16 +688,17 @@
                 if(!Array.isArray(students)) students = [];
                 classGroups = JSON.parse(localStorage.getItem('yuxing_classes_v11')) || [];
                 if(!Array.isArray(classGroups)) classGroups = [];
-            } catch(e) { console.error("本地缓存解析失败"); }
+            } catch(e) {
+                console.error("本地缓存解析失败");
+            }
         }
-
         ensureNotificationsInit();
         loginBtn.innerText = '进入系统'; loginBtn.disabled = false;
         let s = JSON.parse(localStorage.getItem('yuxing_session_v11'));
         if(s && s.user && (Date.now() - s.lastActive < 14400000)) { currentUser = s.user; s.lastActive = Date.now(); localStorage.setItem('yuxing_session_v11', JSON.stringify(s)); loginSuccess(true); }
         
-        makeDraggable('floating-points-box', 'points-drag-handle');
-        makeDraggable('floating-countdown-box', 'countdown-drag-handle');
+        makeDraggable(document.getElementById('floating-points-box'), 'points-drag-handle');
+        makeDraggable(document.getElementById('floating-countdown-box'), 'countdown-drag-handle');
     };
 
     async function forceRefresh() {
@@ -1004,6 +1004,7 @@
     function deleteStudentGroup(usernameKey) { if(confirm("确定彻底移除该学生的所有课程档案吗？")) { students = students.filter(s => s.username !== usernameKey && s.id != usernameKey); saveData(); renderMainDashboard(); } }
     window.updateIndividualTeacher = function(newUn) { students.find(x => x.id == currentStudentId).teacherUsername = newUn; saveData(); renderMainDashboard(); alert(`更换成功！新老师 ${getTeacherName(newUn)} 可以直接看到该生的所有历史记录。`); }
 
+    // ================= 独立布置作业 =================
     function openAssignHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('assign-hw-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1038,6 +1039,7 @@
         saveData(); closeModal('assign-hw-modal'); alert(`成功为 ${cbs.length} 名学生布置了独立作业。`); renderMainDashboard(); 
     }
 
+    // ================= 补录打卡与发布作业融合版 =================
     function openPublishHwModal() {
         let myClasses = currentUser.role === 'admin' ? classGroups.map(c=>c.name) : classGroups.filter(c=>c.teacherUsername === currentUser.username).map(c=>c.name);
         let sel = document.getElementById('pub-class-select'); sel.innerHTML = `<option value="" hidden>请先选择一个班级</option>` + myClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1156,6 +1158,7 @@
     function circleEnd(e) { document.onpointerup = null; document.onpointermove = null; document.onpointercancel = null; circleEl.classList.remove('pressing'); clearTimeout(cLongPressTimer); if(!cMoved) { toggleLiveTimer(); } }
     circleEl.onpointerdown = circleStart;
 
+    // ================= 互动加分引擎 =================
     function openClassSelectModal() {
         let html = '';
         if (currentUser.role === 'student') { let myStudents = students.filter(s => s.username === currentUser.username); html += `<div style="font-weight:600; font-size:13px; color:var(--text-muted); margin-bottom:8px;">选择我要操作的课程</div>`; html += myStudents.map(s => `<button class="btn-apple btn-secondary" style="margin-bottom:8px;" onclick="startClassroomInt('student_${s.name}', '${s.className}')">${s.className}</button>`).join(''); } 
