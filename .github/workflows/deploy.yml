@@ -1,0 +1,27 @@
+name: 自动部署到云服务器
+
+on:
+  push:
+    branches:
+      - main # 如果您的默认分支叫 master，请把这里改成 master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 登录服务器并更新网站
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            # 1. 进入服务器里存放系统代码的文件夹（🚨请将下面这一行替换为您服务器里真实的文件夹路径）
+            cd /var/www/您的项目文件夹名称
+            
+            # 2. 从 GitHub 拉取最新的代码
+            git pull origin main
+            
+            # 3. 安装依赖并重启网站 (这是 Node.js 的常见重启命令，如果您用的是其他环境，请根据实际情况修改或告诉我帮您改)
+            npm install
+            pm2 restart all
